@@ -1,0 +1,28 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { tv } from "tailwind-variants";
+
+type Props = HTMLAttributes<"div"> & {
+	showToggle?: boolean;
+};
+
+const cardHeader = tv({ base: "flex flex-col space-y-2" });
+
+const { class: className, showToggle = false, ...rest } = Astro.props;
+---
+
+<div class={cardHeader({ class: className })} data-card-header={showToggle ? "true" : undefined} {...rest}>
+	{
+		showToggle && (
+			<div class='flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded p-1 -m-1 transition-colors select-none'>
+				<svg data-toggle-icon class='w-4 h-4 transition-transform duration-200' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+					<path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7' />
+				</svg>
+				<div class='flex-1'>
+					<slot />
+				</div>
+			</div>
+		)
+	}
+	{!showToggle && <slot />}
+</div>

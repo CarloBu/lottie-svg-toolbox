@@ -1,0 +1,126 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { tv } from "tailwind-variants";
+
+type Props = HTMLAttributes<"div"> & {
+	collapsible?: boolean;
+	defaultCollapsed?: boolean;
+	cardId?: string;
+};
+
+const card = tv({ base: "design-card text-card-foreground space-y-4" });
+
+const { class: className, collapsible = false, defaultCollapsed = false, cardId, ...rest } = Astro.props;
+---
+
+<div 
+	class={card({ class: className })} 
+	data-collapsible={collapsible}
+	data-card-id={cardId}
+	{...rest}
+>
+	<slot />
+</div>
+
+{collapsible && (
+	<script define:vars={{ cardId, defaultCollapsed }}>
+		// Initialize collapsible functionality
+		function initCollapsibleCard() {
+			const card = document.querySelector(`[data-card-id="${cardId}"]`);
+			if (!card) return;
+
+			const header = card.querySelector('[data-card-header]');
+			const content = card.querySelector('[data-card-content]');
+			const toggleIcon = card.querySelector('[data-toggle-icon]');
+			
+			if (!header || !content || !toggleIcon) return;
+
+			// Add smooth transition styles
+			content.style.transition = 'max-height 0.3s ease-in-out, opacity 0.3s ease-in-out';
+			// Don't set overflow hidden to allow popups to be visible
+
+			// Function to get content height
+			function getContentHeight() {
+				const originalDisplay = content.style.display;
+				const originalMaxHeight = content.style.maxHeight;
+				content.style.display = '';
+				content.style.maxHeight = 'none';
+				const height = content.scrollHeight;
+				content.style.display = originalDisplay;
+				content.style.maxHeight = originalMaxHeight;
+				return height;
+			}
+
+			// Function to set collapsed state
+			function setCollapsed(isCollapsed) {
+				if (isCollapsed) {
+					content.style.maxHeight = '0px';
+					content.style.opacity = '0';
+					content.style.overflow = 'hidden'; // Only hide overflow when collapsed
+					toggleIcon.style.transform = 'rotate(-90deg)';
+				} else {
+					const height = getContentHeight();
+					content.style.maxHeight = height + 'px';
+					content.style.opacity = '1';
+					content.style.overflow = 'visible'; // Allow overflow when expanded
+					toggleIcon.style.transform = 'rotate(0deg)';
+					
+					// Reset max-height after transition
+					setTimeout(() => {
+						content.style.maxHeight = 'none';
+					}, 300);
+				}
+			}
+
+		// Load saved state first, then fall back to default
+		let initialState = defaultCollapsed;
+		
+		// Try to load saved state using unified system
+		try {
+			const savedState = localStorage.getItem(`card-${cardId}-collapsed`);
+			if (savedState === 'true') {
+				initialState = true;
+			} else if (savedState === 'false') {
+				initialState = false;
+			}
+		} catch (e) {
+			// localStorage might not be available (private browsing, etc.)
+			console.warn('localStorage not available for card state persistence');
+		}
+			
+			// Set initial state
+			setCollapsed(initialState);
+
+			// Add click handler to header
+			header.addEventListener('click', () => {
+				const isCurrentlyCollapsed = content.style.maxHeight === '0px';
+				
+				if (isCurrentlyCollapsed) {
+					// Expand
+					setCollapsed(false);
+					try {
+						localStorage.setItem(`card-${cardId}-collapsed`, 'false');
+					} catch (e) {
+						// localStorage might not be available
+					}
+				} else {
+					// Collapse
+					setCollapsed(true);
+					try {
+						localStorage.setItem(`card-${cardId}-collapsed`, 'true');
+					} catch (e) {
+						// localStorage might not be available
+					}
+				}
+			});
+		}
+
+		// Initialize when DOM is ready
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', initCollapsibleCard);
+		} else {
+			initCollapsibleCard();
+		}
+
+	</script>
+)}

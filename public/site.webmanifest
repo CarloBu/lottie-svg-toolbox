@@ -1,0 +1,44 @@
+{
+	"name": "Lottie to SVG Converter",
+	"short_name": "Lottie Converter",
+	"description": "Convert Lottie animations to SVG, PNG, and JPEG formats instantly. Preview animations, export static assets, and optimize for web performance.",
+	"start_url": "/",
+	"display": "minimal-ui",
+	"background_color": "#000000",
+	"theme_color": "#000000",
+	"scope": "/",
+	"lang": "en-US",
+	"categories": ["productivity", "utilities", "multimedia"],
+	"icons": [
+		{
+			"src": "/favicon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		}
+	],
+	"screenshots": [
+		{
+			"src": "/og-image.jpg",
+			"sizes": "1200x630",
+			"type": "image/jpeg",
+			"form_factor": "wide",
+			"label": "Lottie to SVG Converter Desktop Interface"
+		}
+	],
+	"shortcuts": [
+		{
+			"name": "Convert Lottie",
+			"short_name": "Convert",
+			"description": "Start converting a Lottie animation",
+			"url": "/",
+			"icons": [
+				{
+					"src": "/favicon.svg",
+					"sizes": "any",
+					"type": "image/svg+xml"
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,100 @@
+---
+import LottieFileIcon from "@/assets/lottieFile.svg";
+import SvgFileIcon from "@/assets/svgFile.svg";
+import TrashcanIcon from "@/assets/trashcanSvg.svg";
+import { Card, CardHeader, CardContent } from "../starwind/card";
+---
+
+<Card collapsible={true} defaultCollapsed={false} cardId='recent-files' class='flex flex-col max-h-full overflow-hidden'>
+	<CardHeader showToggle={true}>
+		<span class='text-sm'>Recent Files</span>
+	</CardHeader>
+	<CardContent collapsible={true} class='flex-1 min-h-0 overflow-hidden'>
+		<ul id='recent-list' class='space-y-1 text-sm overflow-auto flex-1 min-h-0'>
+			<!-- populated by script -->
+		</ul>
+	</CardContent>
+</Card>
+
+<script>
+	const RECENT_KEY = "lottie-converter-recent-files";
+
+	type RecentItem = { name: string; size: number; lastOpened: number; content?: string };
+
+	function readRecent(): RecentItem[] {
+		try {
+			return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") as RecentItem[];
+		} catch {
+			return [];
+		}
+	}
+	function writeRecent(items: RecentItem[]) {
+		localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, 20)));
+	}
+	function formatAgo(ts: number) {
+		const diff = Date.now() - ts;
+		const m = 60 * 1000,
+			h = 60 * m,
+			d = 24 * h;
+		if (diff < h) return `${Math.max(1, Math.round(diff / m))} min ago`;
+		if (diff < d) return `${Math.round(diff / h)} hour ago`;
+		return `${Math.round(diff / d)} days ago`;
+	}
+	function removeItemByKey(name: string, size: number) {
+		const items: RecentItem[] = readRecent();
+		const next = items.filter((it) => !(it.name === name && it.size === size));
+		writeRecent(next);
+
+		// Check if the removed file is currently open
+		const converter = (window as any).converter;
+		if (converter && converter.isCurrentFile && converter.isCurrentFile(name, size)) {
+			// Clear the current file and reset UI
+			converter.clearCurrentFile();
+		}
+
+		render();
+	}
+
+	function render() {
+		const list = document.getElementById("recent-list");
+		if (!list) return;
+		const items: RecentItem[] = readRecent();
+		list.innerHTML = "";
+		items.forEach((it: RecentItem, idx: number) => {
+			const li = document.createElement("li");
+			li.className = "flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-muted cursor-pointer select-none";
+			const isSvg = it.name.toLowerCase().endsWith(".svg");
+			const iconSrc = isSvg ? "/src/assets/svgFile.svg" : "/src/assets/lottieFile.svg";
+			li.innerHTML = `
+				<img src="${iconSrc}" alt="${isSvg ? "SVG" : "JSON"} file" class="w-5 h-5 flex-shrink-0" />
+				<div class="flex-1 truncate">
+					<div class="truncate">${it.name}</div>
+					<div class="text-[11px] text-muted-foreground">${Math.round(it.size / 1024)} KB • ${formatAgo(it.lastOpened)}</div>
+				</div>
+				<button aria-label="Remove" class="ml-2 text-muted-foreground hover:text-foreground p-1" data-name="${it.name}" data-size="${it.size}">
+					<img src="/src/assets/trashcanSvg.svg" alt="Remove" class="w-3 h-3" />
+				</button>
+			`;
+			li.addEventListener("click", () => {
+				// If we cached content, dispatch a custom event to load it
+				if (it.content) {
+					document.dispatchEvent(new CustomEvent("recent:fileSelected", { detail: it }));
+				}
+			});
+			const removeBtn = li.querySelector("button[data-name]");
+			removeBtn?.addEventListener("click", (ev) => {
+				ev.stopPropagation();
+				const name = (ev.currentTarget as HTMLElement).getAttribute("data-name") || "";
+				const sizeAttr = (ev.currentTarget as HTMLElement).getAttribute("data-size") || "0";
+				removeItemByKey(name, Number(sizeAttr));
+			});
+			list.appendChild(li);
+		});
+	}
+	function setup() {
+		render();
+
+		document.addEventListener("recent:refresh", render);
+	}
+	setup();
+</script>

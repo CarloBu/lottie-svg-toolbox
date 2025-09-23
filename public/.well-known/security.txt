@@ -1,0 +1,6 @@
+Contact: mailto:security@oaksun.studio
+Expires: 2025-12-31T23:59:59.000Z
+Encryption: https://oaksun.studio/pgp-key.txt
+Preferred-Languages: en
+Canonical: http://www.lottiesvg.com/.well-known/security.txt
+Policy: http://www.lottiesvg.com/security-policy

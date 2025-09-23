@@ -1,0 +1,59 @@
+---
+import { Card, CardHeader, CardContent } from "../starwind/card";
+---
+
+<Card collapsible={true} defaultCollapsed={false} cardId='animation-details'>
+	<CardHeader showToggle={true}>
+		<span class='text-sm'>Animation Details</span>
+	</CardHeader>
+	<CardContent collapsible={true}>
+		<div class='text-sm grid grid-cols-2 gap-y-2'>
+			<!-- Animation-specific fields (hidden for SVG files) -->
+			<div id='detail-duration-row' class='contents'>
+				<div class='text-muted-foreground'>Duration</div>
+				<div id='detail-duration'></div>
+			</div>
+			<div id='detail-frames-row' class='contents'>
+				<div class='text-muted-foreground'>Frames</div>
+				<div id='detail-frames'></div>
+			</div>
+			<div id='detail-fps-row' class='contents'>
+				<div class='text-muted-foreground'>Frame Rate</div>
+				<div id='detail-fps'></div>
+			</div>
+
+			<!-- Common fields (always visible) -->
+			<div class='text-muted-foreground'>Dimensions</div>
+			<div id='detail-dimensions'></div>
+			<div class='text-muted-foreground'>File Size</div>
+			<div id='detail-size'></div>
+		</div>
+	</CardContent>
+</Card>
+
+<script>
+	// Function to update animation details visibility based on file type
+	function updateAnimationDetailsVisibility() {
+		const converter = (window as any).converter;
+		if (!converter) return;
+
+		const isSVG = converter.isSVGLoaded();
+		const durationRow = document.getElementById("detail-duration-row");
+		const framesRow = document.getElementById("detail-frames-row");
+		const fpsRow = document.getElementById("detail-fps-row");
+
+		if (durationRow) durationRow.style.display = isSVG ? "none" : "contents";
+		if (framesRow) framesRow.style.display = isSVG ? "none" : "contents";
+		if (fpsRow) fpsRow.style.display = isSVG ? "none" : "contents";
+	}
+
+	// Listen for file load events to update visibility
+	document.addEventListener("lottie:fileLoaded", updateAnimationDetailsVisibility);
+
+	// Update visibility on page load
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", updateAnimationDetailsVisibility);
+	} else {
+		updateAnimationDetailsVisibility();
+	}
+</script>

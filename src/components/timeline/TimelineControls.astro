@@ -1,0 +1,39 @@
+---
+import { Slider } from "@/components/starwind/slider";
+import { Button } from "@/components/starwind/button";
+---
+
+<section class='design-card text-card-foreground'>
+	<div class='flex items-center gap-3'>
+		<div class='text-sm text-muted-foreground ml-2 flex justify-center items-center gap-1'>
+			<span class='text-right'>Frame:</span>
+			<span class='inline-flex items-center gap-1'>
+				<span id='current-frame' class='inline-block text-right tabular-nums'>0</span>
+				<span>/</span>
+				<span id='total-frames' class='inline-block text-left tabular-nums'>0</span>
+			</span>
+		</div>
+		<Slider
+			id='frame-slider'
+			name='frame-slider'
+			min={0}
+			max={100}
+			defaultValue={[0]}
+			step={1}
+			onValueChange='handleFrameChange'
+			class='w-full flex-1'
+		/>
+		<Button
+			id='play-btn'
+			variant='default'
+			size='sm'
+			class='select-none ml-2 disabled:bg-card disabled:text-card-foreground disabled:border disabled:border-border disabled:opacity-50'
+			disabled
+		>
+			<svg class='w-4 h-4 mr-2' fill='currentColor' viewBox='0 0 24 24' aria-hidden='true'>
+				<path d='M8 5v14l11-7-11-7z'></path>
+			</svg>
+			<span>Play</span>
+		</Button>
+	</div>
+</section>

@@ -1,0 +1,225 @@
+---
+import { SwitchRow } from "@/components/starwind/switch";
+import { Input } from "@/components/starwind/input";
+import { Label } from "@/components/starwind/label";
+import Select from "@/components/starwind/select/Select.astro";
+import SelectTrigger from "@/components/starwind/select/SelectTrigger.astro";
+import SelectContent from "@/components/starwind/select/SelectContent.astro";
+import SelectItem from "@/components/starwind/select/SelectItem.astro";
+import SelectValue from "@/components/starwind/select/SelectValue.astro";
+import { Slider } from "@/components/starwind/slider";
+import { Card, CardHeader, CardContent } from "../starwind/card";
+---
+
+<Card collapsible={true} defaultCollapsed={false} cardId='export-panel'>
+	<CardHeader showToggle={true}>
+		<span class='text-sm'>Export Settings</span>
+	</CardHeader>
+	<CardContent collapsible={true}>
+		<div class='space-y-5'>
+			<!-- Format -->
+			<div class='space-y-1 mb-8'>
+				<Label class='text-sm mb-2 block'>Format</Label>
+				<div id='export-format'>
+					<Select name='export-format' defaultValue='svg' class='w-full'>
+						<SelectTrigger class='w-full'>
+							<SelectValue placeholder='SVG' />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='svg'>SVG</SelectItem>
+							<SelectItem value='png'>PNG (transparent)</SelectItem>
+							<SelectItem value='jpeg'>JPEG</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+			</div>
+
+			<!-- SVG compression toggle (hidden for PNG/JPEG) -->
+
+			<SwitchRow id='aggressive-optimization' label='Compress SVG' class='hidden' />
+			<!-- Raster resolution (visible for PNG/JPEG) -->
+			<div id='resolution-section' class='space-y-2 hidden'>
+				<div class='flex items-center justify-between gap-2'>
+					<span class='text-sm'>Resolution</span>
+					<span id='resolution-value' class='text-xs text-muted-foreground'>—</span>
+				</div>
+				<Slider name='raster-scale' min={1} max={5} step={1} defaultValue={2} onValueChange='handleResolutionChange' />
+			</div>
+			<!-- Compression level (visible for PNG/JPEG) -->
+			<div id='compression-section' class='space-y-2 hidden'>
+				<div class='flex items-center justify-between gap-2'>
+					<span class='text-sm'>Compression level</span>
+					<span id='compression-value' class='text-xs text-muted-foreground'>80%</span>
+				</div>
+				<Slider name='compression-level' min={1} max={100} step={1} defaultValue={80} onValueChange='handleCompressionChange' />
+			</div>
+
+			<div class='pt-4'>
+				<button
+					id='download-btn'
+					class='inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-card disabled:text-card-foreground disabled:border disabled:border-border disabled:opacity-50 select-none h-12 px-3 w-full'
+					disabled
+				>
+					<span id='download-label'>Download SVG</span>
+				</button>
+			</div>
+
+			<!-- Frame outline toggle moved to BackgroundPicker -->
+		</div>
+	</CardContent>
+</Card>
+
+<script>
+	import { getPreference, setPreference } from "@/utils/preferences";
+
+	// Map slider index -> scale factor
+	const SCALE_STEPS = [0.25, 0.5, 1, 2, 4, 8];
+
+	// Update compression percentage label
+	(window as any).handleCompressionChange = (value: number) => {
+		const v = Math.round(Number(value) || 1);
+		const el = document.getElementById("compression-value");
+		if (el) el.textContent = `${v}%`;
+	};
+
+	// Update resolution when the slider changes
+	(window as any).handleResolutionChange = (value: number) => {
+		updateResolutionUI(Math.round(Number(value) || 1));
+	};
+
+	function parseOriginalDimensions(): { w: number; h: number } | null {
+		const el = document.getElementById("detail-dimensions");
+		if (!el) return null;
+		const text = (el.textContent || "").trim();
+		// Expect formats like "500 × 500 px" or "—"
+		const m = text.match(/(\d+(?:\.\d+)?)\s*[×x]\s*(\d+(?:\.\d+)?)\s*px/i);
+		if (!m) return null;
+		const w = Math.round(parseFloat(m[1]));
+		const h = Math.round(parseFloat(m[2]));
+		if (!Number.isFinite(w) || !Number.isFinite(h)) return null;
+		return { w, h };
+	}
+
+	function formatPx(w: number, h: number): string {
+		return `${Math.max(1, Math.round(w))} × ${Math.max(1, Math.round(h))} px`;
+	}
+
+	function updateResolutionUI(selectedIndex?: number) {
+		const dims = parseOriginalDimensions();
+		const valueLabel = document.getElementById("resolution-value");
+		const sliderInput = document.querySelector('input[name="raster-scale"]') as HTMLInputElement | null;
+		if (!valueLabel || !sliderInput) return;
+
+		// Slider now goes from 1-5, map to SCALE_STEPS array (0-5 indices)
+		const raw = typeof selectedIndex === "number" ? selectedIndex : Math.round(Number(sliderInput.value));
+		const idx = Number.isFinite(raw) ? raw : 2;
+		// Convert slider value (1-5) to array index (0-4), with 1 mapping to index 2 (1x scale)
+		const arrayIdx = Math.max(0, Math.min(SCALE_STEPS.length - 1, idx - 1));
+		const scale = SCALE_STEPS[arrayIdx];
+
+		if (!dims) {
+			valueLabel.textContent = "—";
+			return;
+		}
+
+		// Current selected output size
+		valueLabel.textContent = formatPx(dims.w * scale, dims.h * scale);
+	}
+
+	function attachCompressionInputListener() {
+		const input = document.querySelector('input[name="compression-level"]') as HTMLInputElement | null;
+		const label = document.getElementById("compression-value");
+		if (!input || !label) return;
+		// Set initial
+		label.textContent = `${Math.round(Number(input.value) || 1)}%`;
+		input.addEventListener("input", () => {
+			label.textContent = `${Math.round(Number(input.value) || 1)}%`;
+		});
+	}
+
+	function attachResolutionInputListener() {
+		const input = document.querySelector('input[name="raster-scale"]') as HTMLInputElement | null;
+		if (!input) return;
+		updateResolutionUI(Math.round(Number(input.value) || 1));
+		input.addEventListener("input", () => updateResolutionUI(Math.round(Number(input.value) || 1)));
+	}
+
+	function updateExportVisibility(format: string) {
+		const compressRow = document.querySelector('label[for="aggressive-optimization"]');
+		const compressionSection = document.getElementById("compression-section");
+		const resolutionSection = document.getElementById("resolution-section");
+		const downloadLabel = document.getElementById("download-label");
+		if (!compressRow || !compressionSection || !resolutionSection) return;
+		if (format === "svg") {
+			compressRow.classList.remove("hidden");
+			compressionSection.classList.add("hidden");
+			resolutionSection.classList.add("hidden");
+			if (downloadLabel) downloadLabel.textContent = "Download SVG";
+		} else {
+			compressRow.classList.add("hidden");
+			// Show resolution section for raster formats
+			resolutionSection.classList.remove("hidden");
+			updateResolutionUI();
+			// Only show compression slider for JPEG
+			if (format === "jpeg") {
+				compressionSection.classList.remove("hidden");
+				if (downloadLabel) downloadLabel.textContent = "Download JPEG";
+			} else {
+				compressionSection.classList.add("hidden");
+				if (downloadLabel) downloadLabel.textContent = "Download PNG";
+			}
+		}
+	}
+
+	// Listen for select changes on the format selector
+	const attachFormatListener = () => {
+		const container = document.getElementById("export-format");
+		if (!container) return;
+
+		// Load saved export format preference using unified system
+		const savedFormat = getPreference("export-format");
+
+		// Programmatically set the select value to the saved preference
+		const selectElement = container.querySelector(".starwind-select") as HTMLElement;
+		if (selectElement) {
+			selectElement.setAttribute("data-value", savedFormat);
+			// Trigger a programmatic selection event
+			document.dispatchEvent(
+				new CustomEvent("starwind-select:select", {
+					detail: {
+						selectName: "export-format",
+						value: savedFormat,
+					},
+				}),
+			);
+		}
+
+		updateExportVisibility(savedFormat);
+
+		attachCompressionInputListener();
+		attachResolutionInputListener();
+		container.addEventListener("starwind-select:change", (e: Event) => {
+			const detail = (e as CustomEvent).detail as { value: string } | undefined;
+			if (!detail) return;
+			updateExportVisibility(detail.value);
+			// Save the selection using unified system
+			setPreference("export-format", detail.value as "svg" | "png" | "jpeg");
+		});
+	};
+
+	function attachFrameToggleListener() {
+		const btn = document.getElementById("frame-toggle-btn") as HTMLButtonElement | null;
+		if (!btn) return;
+		// LottieConverter owns the click handler; here we just ensure the element exists post-swap
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", () => {
+			attachFormatListener();
+			attachFrameToggleListener();
+		});
+	} else {
+		attachFormatListener();
+		attachFrameToggleListener();
+	}
+</script>

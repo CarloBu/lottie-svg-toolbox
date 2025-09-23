@@ -1,0 +1,16 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { tv } from "tailwind-variants";
+
+type Props = HTMLAttributes<"div"> & {
+	collapsible?: boolean;
+};
+
+const cardContent = tv({ base: "p-0" });
+
+const { class: className, collapsible = false, ...rest } = Astro.props;
+---
+
+<div class={cardContent({ class: className })} data-card-content={collapsible ? "true" : undefined} {...rest}>
+	<slot />
+</div>

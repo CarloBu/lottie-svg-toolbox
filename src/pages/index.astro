@@ -1,0 +1,506 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { Button } from "@/components/starwind/button";
+import { Checkbox } from "@/components/starwind/checkbox";
+import { Input } from "@/components/starwind/input";
+import { Label } from "@/components/starwind/label";
+
+// New UI components
+import ToolLabel from "@/components/leftSidebar/ToolLabel.astro";
+import UploaderPanel from "@/components/leftSidebar/UploaderPanel.astro";
+import RecentFiles from "@/components/leftSidebar/RecentFiles.astro";
+import PreviewCanvas from "@/components/preview/PreviewCanvas.astro";
+import PreviewZoom from "@/components/preview/PreviewZoom.astro";
+import ViewerSettings from "@/components/rightSidebar/ViewerSettings.astro";
+import ExportPanel from "@/components/rightSidebar/ExportPanel.astro";
+import AnimationDetails from "@/components/rightSidebar/AnimationDetails.astro";
+import TimelineControls from "@/components/timeline/TimelineControls.astro";
+---
+
+<Layout>
+	<div class='relative w-screen h-screen'>
+		<!-- Fullscreen canvas layer -->
+		<div id='preview-section' class='absolute inset-0'>
+			<PreviewCanvas />
+			<PreviewZoom />
+		</div>
+
+		<!-- Left Sidebar overlay -->
+		<aside class='fixed left-0 top-0 bottom-0 w-[21em] space-y-4 pt-8 pl-8 z-20 flex flex-col min-h-0 overflow-x-auto'>
+			<div class='space-y-4 pr-8'>
+				<ToolLabel />
+				<UploaderPanel />
+				<RecentFiles />
+			</div>
+		</aside>
+
+		<!-- Right Sidebar overlay -->
+		<aside class='fixed right-0 top-0 bottom-0 w-[21rem] space-y-6 pt-8 pr-8 z-20 overflow-x-auto'>
+			<div class='space-y-6 pl-8'>
+				<ExportPanel />
+				<ViewerSettings />
+				<AnimationDetails />
+			</div>
+		</aside>
+
+		<!-- Bottom Timeline overlay -->
+		<div id='timeline-section' class='fixed inset-x-0 bottom-0 flex justify-center pb-8 z-20'>
+			<div class='w-full max-w-[1000px] mx-8 xl:mx-[21rem]'>
+				<TimelineControls />
+			</div>
+		</div>
+
+		<!-- Studio Sticker -->
+		<div class='fixed bottom-8 right-8 z-30'>
+			<div class='bg-background border border-border rounded-lg px-3 py-2'>
+				<div class='flex items-center gap-2 text-sm'>
+					<a href='https://wlf.studio' target='_blank' rel='noopener noreferrer' class='text-muted-foreground hover:text-primary transition-colors'>
+						WLF
+					</a>
+					<span class='text-muted-foreground/50'>+</span>
+					<a
+						href='https://oaksun.studio'
+						target='_blank'
+						rel='noopener noreferrer'
+						class='text-muted-foreground hover:text-primary transition-colors'
+					>
+						OAKSUN
+					</a>
+				</div>
+			</div>
+		</div>
+
+		<!-- Mobile overlay -->
+		<div class='md:hidden fixed inset-0 bg-background z-50 flex items-center justify-center p-8'>
+			<div class='text-center max-w-md'>
+				<div class='mb-6'>
+					<svg class='w-16 h-16 mx-auto text-muted-foreground mb-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+						<path
+							stroke-linecap='round'
+							stroke-linejoin='round'
+							stroke-width='1.5'
+							d='M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
+						>
+						</path>
+					</svg>
+				</div>
+				<h2 class='text-xl font-semibold text-foreground mb-3'>Desktop only, silly!</h2>
+				<p class='text-muted-foreground leading-relaxed'>
+					This Lottie SVG Preview Tool is designed for desktop use only! <br />Your phone is too tiny for this tool.
+				</p>
+			</div>
+		</div>
+	</div>
+</Layout>
+
+<script>
+	import { LottieConverter } from "../scripts/lottie-converter";
+	import type { RecentItem } from "../scripts/recent-files";
+	import { getPreference, setPreference } from "../utils/preferences";
+
+	let converter: LottieConverter;
+
+	// Global function for slider frame change
+	(window as any).handleFrameChange = (value: number) => {
+		const v = Math.round(value);
+		const currentFrameSpan = document.getElementById("current-frame");
+		if (currentFrameSpan) currentFrameSpan.textContent = v.toString();
+		// Guard against early slider events during initialization
+		if (converter && converter["setFrame"]) converter.setFrame(v);
+	};
+
+	// Function to update timeline visibility based on file type
+	function updateTimelineVisibility() {
+		const timelineSection = document.getElementById("timeline-section");
+		if (!timelineSection || !converter) return;
+
+		const isSVG = converter.isSVGLoaded();
+		if (isSVG) {
+			timelineSection.style.display = "none";
+		} else {
+			timelineSection.style.display = "flex";
+		}
+	}
+
+	// Initialize on page load
+	function init() {
+		converter = new LottieConverter();
+		// Update global reference after initialization
+		(window as any).converter = converter;
+		setupBackgroundToggle();
+		setupExportOptionsStorage();
+		loadStoredPreferences();
+		setupRecentFilesLoader();
+		setupFileLoadListener();
+		updateTimelineVisibility();
+	}
+
+	// Listen for file load events from LottieConverter
+	function setupFileLoadListener() {
+		document.addEventListener("lottie:fileLoaded", (e: Event) => {
+			updateTimelineVisibility();
+		});
+	}
+
+	// Listen for clicks from Recent Files panel
+	function setupRecentFilesLoader() {
+		document.addEventListener("recent:fileSelected", (e: Event) => {
+			const detail = (e as CustomEvent).detail as RecentItem | undefined;
+			if (!detail || !detail.content) return;
+			if (!converter) {
+				converter = new LottieConverter();
+				// Update global reference after initialization
+				(window as any).converter = converter;
+			}
+			const lower = detail.name.toLowerCase();
+			if (lower.endsWith(".svg")) {
+				converter.loadFromSVGString(detail.name, detail.size, detail.content);
+			} else {
+				converter.loadFromJSONString(detail.name, detail.size, detail.content);
+			}
+			// Update timeline visibility after loading file
+			updateTimelineVisibility();
+		});
+	}
+
+	// Setup background color toggle functionality
+	function setupBackgroundToggle() {
+		const previewContainer = document.getElementById("preview-container");
+		const toggleButtons = document.querySelectorAll("[data-bg]");
+		const customButton = document.getElementById("bg-custom");
+		const customPopover = document.getElementById("custom-color-popover");
+		const customCanvas = document.getElementById("custom-color-canvas") as HTMLCanvasElement | null;
+		const customPreview = document.getElementById("custom-color-preview") as HTMLDivElement | null;
+		const customHexInput = document.getElementById("custom-color-hex") as HTMLInputElement | null;
+		const customWrapper = document.getElementById("bg-custom-wrapper");
+
+		if (!previewContainer || !toggleButtons.length) return;
+
+		const removeAllBackgrounds = () => {
+			previewContainer.classList.remove(
+				"preview-bg-white",
+				"preview-bg-gray",
+				"preview-bg-dark-gray",
+				"preview-bg-black",
+				"preview-bg-checkers",
+				"preview-bg-custom",
+			);
+			// Clear any inline background styles from custom selections
+			(previewContainer as HTMLElement).style.backgroundColor = "";
+			(previewContainer as HTMLElement).style.backgroundImage = "";
+		};
+
+		// Initialize and handle canvas-based color picker
+		const setCustomColor = (color: string) => {
+			removeAllBackgrounds();
+			(previewContainer as HTMLElement).style.backgroundColor = color;
+			if (customButton) customButton.classList.add("bg-toggle-active");
+			if (customPreview) customPreview.style.backgroundColor = color;
+			if (customHexInput) customHexInput.value = color;
+			setPreference("bg", "custom");
+			setPreference("bg-custom-color", color);
+		};
+
+		const drawSpectrum = () => {
+			if (!customCanvas) return;
+			const ctx = customCanvas.getContext("2d");
+			if (!ctx) return;
+			const { width, height } = customCanvas;
+			// Horizontal hue gradient
+			const hueGradient = ctx.createLinearGradient(0, 0, width, 0);
+			for (let i = 0; i <= 360; i += 60) {
+				hueGradient.addColorStop(i / 360, `hsl(${i} 100% 50%)`);
+			}
+			ctx.fillStyle = hueGradient as any;
+			ctx.fillRect(0, 0, width, height);
+			// Vertical white to transparent to black gradient overlay
+			const whiteGradient = ctx.createLinearGradient(0, 0, 0, height);
+			whiteGradient.addColorStop(0, "rgba(255,255,255,1)");
+			whiteGradient.addColorStop(0.5, "rgba(255,255,255,0)");
+			whiteGradient.addColorStop(0.5, "rgba(0,0,0,0)");
+			whiteGradient.addColorStop(1, "rgba(0,0,0,1)");
+			ctx.fillStyle = whiteGradient as any;
+			ctx.fillRect(0, 0, width, height);
+		};
+
+		const getColorAt = (x: number, y: number) => {
+			if (!customCanvas) return "#ffffff";
+			const ctx = customCanvas.getContext("2d");
+			if (!ctx) return "#ffffff";
+			const clampedX = Math.max(0, Math.min(customCanvas.width - 1, x));
+			const clampedY = Math.max(0, Math.min(customCanvas.height - 1, y));
+			const data = ctx.getImageData(clampedX, clampedY, 1, 1).data;
+			const toHex = (v: number) => v.toString(16).padStart(2, "0");
+			return `#${toHex(data[0])}${toHex(data[1])}${toHex(data[2])}`;
+		};
+
+		if (customCanvas) {
+			drawSpectrum();
+			let isDragging = false;
+			const onPick = (evt: MouseEvent) => {
+				const rect = customCanvas!.getBoundingClientRect();
+				const x = Math.round((evt.clientX - rect.left) * (customCanvas!.width / rect.width));
+				const y = Math.round((evt.clientY - rect.top) * (customCanvas!.height / rect.height));
+				setCustomColor(getColorAt(x, y));
+			};
+			customCanvas.addEventListener("mousedown", (e) => {
+				isDragging = true;
+				onPick(e);
+			});
+			window.addEventListener(
+				"mousemove",
+				(e) => {
+					if (!isDragging) return;
+					onPick(e);
+				},
+				{ passive: true },
+			);
+			window.addEventListener(
+				"mouseup",
+				() => {
+					const wasDragging = isDragging;
+					isDragging = false;
+					if (wasDragging && customPopover) customPopover.classList.add("hidden");
+				},
+				{ passive: true },
+			);
+		}
+
+		if (customHexInput) {
+			customHexInput.addEventListener("input", () => {
+				const v = customHexInput.value.trim();
+				if (/^#([0-9a-fA-F]{6})$/.test(v)) setCustomColor(v);
+			});
+		}
+
+		// Add click event listeners to all toggle buttons
+		toggleButtons.forEach((button) => {
+			button.addEventListener("click", () => {
+				const bgType = button.getAttribute("data-bg");
+				if (!bgType) return;
+
+				// Remove active class from all buttons
+				toggleButtons.forEach((btn) => btn.classList.remove("bg-toggle-active"));
+
+				// Add active class to clicked button
+				button.classList.add("bg-toggle-active");
+
+				if (bgType === "custom") {
+					const savedColor = getPreference("bg-custom-color");
+					setCustomColor(savedColor);
+					if (customPopover) customPopover.classList.remove("hidden");
+					return;
+				}
+
+				// For predefined backgrounds
+				removeAllBackgrounds();
+				previewContainer.classList.add(`preview-bg-${bgType}`);
+				setPreference("bg", bgType as any);
+				if (customPopover) customPopover.classList.add("hidden");
+			});
+		});
+
+		// Close popover when clicking outside
+		document.addEventListener("click", (e) => {
+			if (!customPopover || !customWrapper) return;
+			const target = e.target as Node;
+			if (!customWrapper.contains(target)) {
+				customPopover.classList.add("hidden");
+			}
+		});
+	}
+
+	// Setup export options storage functionality
+	function setupExportOptionsStorage() {
+		const aggressiveSwitch = document.getElementById("aggressive-optimization") as HTMLButtonElement | null;
+		const loopSwitch = document.getElementById("loop-toggle-switch") as HTMLButtonElement | null;
+
+		if (aggressiveSwitch) {
+			aggressiveSwitch.addEventListener("starwind-switch:change", (e: Event) => {
+				const detail = (e as CustomEvent).detail as { checked: boolean } | undefined;
+				if (detail) setPreference("aggressive-optimization", detail.checked);
+			});
+		}
+
+		if (loopSwitch) {
+			loopSwitch.addEventListener("starwind-switch:change", (e: Event) => {
+				const detail = (e as CustomEvent).detail as { checked: boolean } | undefined;
+				if (!detail) return;
+				setPreference("loop", detail.checked);
+				if (converter) converter.setLoop(detail.checked);
+			});
+		}
+	}
+
+	// Load stored preferences from localStorage
+	function loadStoredPreferences() {
+		// Load background color preference
+		const savedBg = getPreference("bg");
+		const previewContainer = document.getElementById("preview-container") as HTMLElement | null;
+		const customPopover = document.getElementById("custom-color-popover");
+		const customPreview = document.getElementById("custom-color-preview") as HTMLDivElement | null;
+		const customHexInput = document.getElementById("custom-color-hex") as HTMLInputElement | null;
+
+		if (previewContainer) {
+			const removeAllBackgrounds = () => {
+				previewContainer.classList.remove(
+					"preview-bg-white",
+					"preview-bg-gray",
+					"preview-bg-dark-gray",
+					"preview-bg-black",
+					"preview-bg-checkers",
+					"preview-bg-custom",
+				);
+				previewContainer.style.backgroundColor = "";
+				previewContainer.style.backgroundImage = "";
+			};
+
+			// Reset active states
+			document.querySelectorAll("[data-bg]").forEach((btn) => btn.classList.remove("bg-toggle-active"));
+
+			if (savedBg === "custom") {
+				const color = getPreference("bg-custom-color");
+				removeAllBackgrounds();
+				previewContainer.style.backgroundColor = color;
+				if (customPreview) customPreview.style.backgroundColor = color;
+				if (customHexInput) customHexInput.value = color;
+				const customBtn = document.getElementById("bg-custom");
+				if (customBtn) customBtn.classList.add("bg-toggle-active");
+				if (customPopover) customPopover.classList.add("hidden");
+			} else {
+				const savedBgButton = document.getElementById(`bg-${savedBg}`);
+				if (savedBgButton) {
+					removeAllBackgrounds();
+					previewContainer.classList.add(`preview-bg-${savedBg}`);
+					savedBgButton.classList.add("bg-toggle-active");
+				}
+			}
+		}
+
+		// Load aggressive optimization preference
+		const savedAggressiveOptimization = getPreference("aggressive-optimization");
+		const aggressiveSwitch = document.getElementById("aggressive-optimization") as HTMLButtonElement | null;
+		if (aggressiveSwitch) {
+			aggressiveSwitch.setAttribute("aria-checked", savedAggressiveOptimization ? "true" : "false");
+		}
+
+		// Load loop preference
+		const savedLoop = getPreference("loop");
+		const loopSwitch = document.getElementById("loop-toggle-switch") as HTMLButtonElement | null;
+		if (loopSwitch) {
+			loopSwitch.setAttribute("aria-checked", savedLoop ? "true" : "false");
+			if (converter) converter.setLoop(savedLoop);
+		}
+	}
+
+	// Initialize when DOM is ready
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", init);
+	} else {
+		init();
+	}
+</script>
+
+<style>
+	/* Ensure lottie container handles SVG properly */
+	#lottie-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+	}
+
+	#lottie-container svg {
+		max-width: 100%;
+		max-height: 100%;
+		width: auto;
+		height: auto;
+		object-fit: contain;
+	}
+
+	/* Smooth transitions for section switching */
+	#upload-section,
+	#preview-section {
+		transition: opacity 0.3s ease-in-out;
+	}
+
+	/* Background color toggle styles */
+	.bg-checkers {
+		background-image:
+			linear-gradient(45deg, #9ca3af 25%, transparent 25%), linear-gradient(-45deg, #9ca3af 25%, transparent 25%),
+			linear-gradient(45deg, transparent 75%, #9ca3af 75%), linear-gradient(-45deg, transparent 75%, #9ca3af 75%);
+		background-size: 8px 8px;
+		background-position:
+			0 0,
+			0 4px,
+			4px -4px,
+			-4px 0px;
+		background-color: #f3f4f6;
+	}
+
+	/* Preview container background classes */
+	.preview-bg-white {
+		background-color: white;
+	}
+
+	.preview-bg-gray {
+		background-color: #f3f4f6;
+	}
+
+	.preview-bg-dark-gray {
+		background-color: #1f2937; /* neutral-800 */
+	}
+
+	.preview-bg-black {
+		background-color: #000000;
+	}
+
+	.preview-bg-checkers {
+		background-image:
+			linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+			linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+		background-size: 20px 20px;
+		background-position:
+			0 0,
+			0 10px,
+			10px -10px,
+			-10px 0px;
+		background-color: #f9fafb;
+	}
+
+	/* Active state for background toggle buttons */
+	.bg-toggle-active {
+		border-color: hsl(var(--ring)) !important;
+		box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+	}
+
+	/* Rainbow swatch for custom color button */
+	.bg-rainbow {
+		background: conic-gradient(#f00 0deg 60deg, #ff0 60deg 120deg, #0f0 120deg 180deg, #0ff 180deg 240deg, #00f 240deg 300deg, #f0f 300deg 360deg);
+	}
+
+	/* Popover arrow */
+	#custom-color-popover::after {
+		content: "";
+		position: absolute;
+		bottom: -6px;
+		left: 50%;
+		transform: translateX(-50%);
+		border-width: 6px 6px 0 6px;
+		border-style: solid;
+		border-color: var(--border) transparent transparent transparent;
+	}
+
+	/* Inner arrow to match surface */
+	#custom-color-popover::before {
+		content: "";
+		position: absolute;
+		bottom: -5px;
+		left: 50%;
+		transform: translateX(-50%);
+		border-width: 5px 5px 0 5px;
+		border-style: solid;
+		border-color: hsl(var(--popover)) transparent transparent transparent;
+	}
+</style>

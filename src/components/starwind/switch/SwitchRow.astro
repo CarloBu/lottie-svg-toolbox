@@ -1,0 +1,43 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import Switch from "./Switch.astro";
+
+type Props = Omit<HTMLAttributes<"label">, "for"> & {
+	/**
+	 * Unique identifier for the switch component.
+	 */
+	id: string;
+	/**
+	 * Text label to display alongside the switch.
+	 */
+	label: string;
+	/**
+	 * Controls the checked state of the switch.
+	 */
+	checked?: boolean;
+	/**
+	 * Size variant of the switch component.
+	 */
+	size?: "sm" | "md" | "lg";
+	/**
+	 * Visual style variant of the switch.
+	 * @default "default"
+	 */
+	variant?: "default" | "primary" | "secondary" | "info" | "success" | "warning" | "error";
+	/**
+	 * Additional CSS classes for the row container.
+	 */
+	class?: string;
+};
+
+const { id, label, checked = false, size = "md", variant = "default", class: className = "", ...rest } = Astro.props;
+---
+
+<label
+	for={id}
+	class={`flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors  ${className}`}
+	{...rest}
+>
+	<span class='text-sm font-medium'>{label}</span>
+	<Switch id={id} checked={checked} size={size} variant={variant} />
+</label>

@@ -1,0 +1,44 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { tv, type VariantProps } from "tailwind-variants";
+
+interface Props extends HTMLAttributes<"button">, Omit<HTMLAttributes<"a">, "type">, VariantProps<typeof button> {}
+
+const { variant, size, class: className, ...rest } = Astro.props;
+
+const button = tv({
+	base: [
+		"inline-flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap",
+		"[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+		"transition-normal",
+		"focus-visible:outline-2 focus-visible:outline-offset-2",
+		"disabled:pointer-events-none opacity-disabled",
+	],
+	variants: {
+		variant: {
+			default: "bg-foreground text-background hover:opacity-hover focus-visible:outline-outline",
+			primary: "bg-primary text-primary-foreground hover:opacity-hover focus-visible:outline-primary",
+			secondary: "bg-secondary text-secondary-foreground hover:opacity-hover focus-visible:outline-secondary",
+			outline: "border-border hover:bg-border hover:text-foreground focus-visible:outline-outline border",
+			ghost: "hover:bg-foreground/10 hover:text-foreground focus-visible:outline-outline bg-transparent",
+			info: "bg-info text-info-foreground hover:opacity-hover focus-visible:outline-info",
+			success: "bg-success text-success-foreground hover:opacity-hover focus-visible:outline-success",
+			warning: "bg-warning text-warning-foreground hover:opacity-hover focus-visible:outline-warning",
+			error: "bg-error text-error-foreground hover:opacity-hover focus-visible:outline-error",
+		},
+		size: {
+			sm: "h-9 w-24 px-3 py-2 text-sm text-left",
+			md: "h-11 px-4 py-2 text-base",
+			lg: "h-12 px-8 py-2 text-lg",
+			icon: "h-11 w-11",
+		},
+	},
+	defaultVariants: { variant: "default", size: "md" },
+});
+
+const Tag = Astro.props.href ? "a" : "button";
+---
+
+<Tag class={button({ variant, size, class: className })} {...rest}>
+	<slot />
+</Tag>

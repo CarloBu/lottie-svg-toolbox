@@ -1,0 +1,76 @@
+---
+import Select from "@/components/starwind/select/Select.astro";
+import SelectTrigger from "@/components/starwind/select/SelectTrigger.astro";
+import SelectContent from "@/components/starwind/select/SelectContent.astro";
+import SelectItem from "@/components/starwind/select/SelectItem.astro";
+import SelectValue from "@/components/starwind/select/SelectValue.astro";
+---
+
+<div class='absolute top-8 right-[21rem] z-10 flex items-center gap-2'>
+	<div id='preview-zoom'>
+		<Select name='preview-zoom' defaultValue='fit'>
+			<SelectTrigger class='w-22' backgroundColor='#F7F7FB' shadow={true}>
+				<SelectValue placeholder='' />
+			</SelectTrigger>
+			<SelectContent align='end' class='w-40' backgroundColor='#F7F7FB' shadow={true}>
+				<SelectItem value='zoom-in' hoverColor='#EFEFF3'>Zoom In</SelectItem>
+				<SelectItem value='zoom-out' hoverColor='#EFEFF3'>Zoom Out</SelectItem>
+				<SelectItem value='fit' hoverColor='#EFEFF3' data-display-text='Auto'>Zoom to Fit</SelectItem>
+				<SelectItem value='50' hoverColor='#EFEFF3'>50%</SelectItem>
+				<SelectItem value='100' hoverColor='#EFEFF3'>100%</SelectItem>
+				<SelectItem value='200' hoverColor='#EFEFF3'>200%</SelectItem>
+			</SelectContent>
+		</Select>
+	</div>
+</div>
+
+<script>
+	function setupZoomControls() {
+		const zoomSelect = document.querySelector('[name="preview-zoom"]') as HTMLSelectElement;
+		const lottieContainer = document.getElementById("lottie-container");
+
+		if (!zoomSelect || !lottieContainer) return;
+
+		zoomSelect.addEventListener("change", (e) => {
+			const target = e.target as HTMLSelectElement;
+			const value = target.value;
+
+			// Reset any existing zoom styles
+			lottieContainer.style.transform = "";
+			lottieContainer.style.width = "";
+			lottieContainer.style.height = "";
+
+			switch (value) {
+				case "zoom-in":
+					lottieContainer.style.transform = "scale(1.5)";
+					break;
+				case "zoom-out":
+					lottieContainer.style.transform = "scale(0.75)";
+					break;
+				case "fit":
+					// Default behavior - no transform
+					break;
+				case "50":
+					lottieContainer.style.transform = "scale(0.5)";
+					break;
+				case "100":
+					lottieContainer.style.transform = "scale(1)";
+					break;
+				case "200":
+					lottieContainer.style.transform = "scale(2)";
+					break;
+			}
+		});
+	}
+
+	function init() {
+		setupZoomControls();
+	}
+
+	// Initialize when DOM is ready
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", init);
+	} else {
+		init();
+	}
+</script>

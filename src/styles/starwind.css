@@ -1,0 +1,208 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/forms";
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+	--animate-accordion-down: accordion-down 0.2s ease-out;
+	--animate-accordion-up: accordion-up 0.2s ease-out;
+
+	@keyframes accordion-down {
+		from {
+			height: 0;
+		}
+		to {
+			height: var(--starwind-accordion-content-height);
+		}
+	}
+
+	@keyframes accordion-up {
+		from {
+			height: var(--starwind-accordion-content-height);
+		}
+		to {
+			height: 0;
+		}
+	}
+}
+
+@theme inline {
+	/* ===== STARWIND COLOR TOKENS ===== */
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-info: var(--info);
+	--color-info-foreground: var(--info-foreground);
+	--color-success: var(--success);
+	--color-success-foreground: var(--success-foreground);
+	--color-warning: var(--warning);
+	--color-warning-foreground: var(--warning-foreground);
+	--color-error: var(--error);
+	--color-error-foreground: var(--error-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-outline: var(--outline);
+
+	/* ===== DESIGN TOKENS ===== */
+
+	/* Design Radius (12px default) */
+	--radius-xs: calc(var(--radius) - 0.375rem);
+	--radius-sm: calc(var(--radius) - 0.25rem);
+	--radius-md: calc(var(--radius) - 0.125rem);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 0.25rem);
+	--radius-2xl: calc(var(--radius) + 0.5rem);
+	--radius-3xl: calc(var(--radius) + 1rem);
+
+	/* Design Shadow (exact from design) */
+	--shadow-design: 0 5px 10px rgba(0, 0, 0, 0.05), 0 20px 40px rgba(0, 0, 0, 0.08);
+
+	/* Design Typography (14px medium) */
+	--font-size-design: 0.875rem; /* 14px */
+	--font-weight-design: 500; /* medium */
+
+	/* Design Spacing (24px padding, 10px gap) */
+	--spacing-design: 1.5rem; /* 24px */
+	--gap-design: 0.625rem; /* 10px */
+
+	/* Design Effects */
+	--backdrop-blur-design: blur(25px);
+}
+
+@layer base {
+	:root {
+		/* Figma-based color system */
+		--background: #ffffff;
+		--foreground: #202020;
+		--card: rgba(245, 245, 250, 0.9);
+		--card-foreground: #202020;
+		--popover: rgba(245, 245, 250, 0.9);
+		--popover-foreground: #202020;
+		--primary: #202020;
+		--primary-foreground: #ffffff;
+		--secondary: #b8b8cd;
+		--secondary-foreground: #202020;
+		--muted: rgba(0, 0, 0, 0.03);
+		--muted-foreground: rgba(32, 32, 32, 0.8);
+		--accent: #f5f5fa;
+		--accent-foreground: #202020;
+		--info: #456dff;
+		--info-foreground: #ffffff;
+		--success: #71e0ff;
+		--success-foreground: #202020;
+		--warning: #ffd869;
+		--warning-foreground: #202020;
+		--error: #ff4afa;
+		--error-foreground: #ffffff;
+		--border: #e1e1e8;
+		--input: #e1e1e8;
+		--outline: #202020;
+		--radius: 0.75rem;
+	}
+
+	.dark {
+		--background: var(--color-neutral-950);
+		--foreground: var(--color-neutral-50);
+		--card: var(--color-neutral-950);
+		--card-foreground: var(--color-neutral-50);
+		--popover: var(--color-neutral-950);
+		--popover-foreground: var(--color-neutral-50);
+		--primary: var(--color-blue-700);
+		--primary-foreground: var(--color-neutral-50);
+		--secondary: var(--color-fuchsia-300);
+		--secondary-foreground: var(--color-neutral-950);
+		--muted: var(--color-neutral-900);
+		--muted-foreground: var(--color-neutral-400);
+		--accent: var(--color-neutral-900);
+		--accent-foreground: var(--color-neutral-100);
+		--info: var(--color-sky-300);
+		--info-foreground: var(--color-sky-950);
+		--success: var(--color-green-300);
+		--success-foreground: var(--color-green-950);
+		--warning: var(--color-amber-300);
+		--warning-foreground: var(--color-amber-950);
+		--error: var(--color-red-800);
+		--error-foreground: var(--color-neutral-50);
+		--border: var(--color-neutral-800);
+		--input: var(--color-neutral-800);
+		--outline: var(--color-blue-600);
+		--radius: 0.5rem;
+	}
+
+	* {
+		@apply border-border;
+	}
+	*:focus-visible {
+		@apply outline-outline;
+	}
+	html {
+		@apply bg-background text-foreground scheme-light dark:scheme-dark;
+	}
+	button {
+		@apply cursor-pointer;
+	}
+}
+
+@layer utilities {
+	/* transition-colors but without outline-color transition property */
+	.starwind-transition-colors {
+		transition-property:
+			color, background-color, border-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+		transition-timing-function: var(--default-transition-timing-function);
+		transition-duration: var(--default-transition-duration);
+	}
+
+	/* ===== DESIGN COMPONENT UTILITIES ===== */
+
+	/* Design Card - Complete styling matching design */
+	.design-card {
+		background: var(--card);
+		border: 1px solid var(--border);
+		box-shadow: var(--shadow-design);
+		backdrop-filter: var(--backdrop-blur-design);
+		border-radius: var(--radius);
+		padding: var(--spacing-design);
+	}
+
+	/* Design Button - Complete styling matching design */
+	.design-button {
+		background: var(--card);
+		border: 1px solid var(--primary);
+		border-radius: 1rem; /* 16px from design */
+		padding: 0.375rem 1rem; /* 6px 16px from design */
+		color: var(--primary);
+		font-weight: var(--font-weight-design);
+		font-size: var(--font-size-design);
+		line-height: 1.5rem; /* 24px from design */
+	}
+
+	/* Design Input - Complete styling matching design */
+	.design-input {
+		background: var(--muted);
+		border-radius: 0.5rem; /* 8px from design */
+		padding: 0.375rem 1rem; /* 6px 16px from design */
+		border: none;
+		font-size: var(--font-size-design);
+	}
+
+	/* Design Gap - Standard spacing */
+	.gap-design {
+		gap: var(--gap-design);
+	}
+
+	/* Design Large Gap - 25px spacing */
+	.gap-design-lg {
+		gap: 1.5625rem; /* 25px from design */
+	}
+}

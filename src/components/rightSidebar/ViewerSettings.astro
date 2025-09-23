@@ -1,0 +1,57 @@
+---
+import { SwitchRow } from "@/components/starwind/switch";
+import { Label } from "@/components/starwind/label";
+import ColorPickerIcon from "@/assets/colorPicker.svg";
+import { Card, CardHeader, CardContent } from "../starwind/card";
+---
+
+<Card collapsible={true} defaultCollapsed={false} cardId='viewer-settings'>
+	<CardHeader showToggle={true}>
+		<span class='text-sm'>Viewer Settings</span>
+	</CardHeader>
+	<CardContent collapsible={true}>
+		<Label class='text-sm mb-2 block'>Background</Label>
+		<div class='flex items-center gap-2'>
+			<button id='bg-white' class='w-8 h-8 rounded border-2 border-border preview-bg-white select-none cursor-pointer' data-bg='white' title='White'>
+			</button>
+			<button id='bg-gray' class='w-8 h-8 rounded border-2 border-border preview-bg-gray select-none cursor-pointer' data-bg='gray' title='Gray'>
+			</button>
+			<button
+				id='bg-dark-gray'
+				class='w-8 h-8 rounded border-2 border-border preview-bg-dark-gray select-none cursor-pointer'
+				data-bg='dark-gray'
+				title='Dark Gray'
+			>
+			</button>
+			<button id='bg-black' class='w-8 h-8 rounded border-2 border-border preview-bg-black select-none cursor-pointer' data-bg='black' title='Black'>
+			</button>
+			<button
+				id='bg-checkers'
+				class='w-8 h-8 rounded border-2 border-border preview-bg-checkers select-none cursor-pointer'
+				style='background-size: 10px 10px; background-position: 0 0, 0 5px, 5px -5px, -5px 0px;'
+				data-bg='checkers'
+				title='Checkers'
+			>
+			</button>
+			<button id='bg-custom' data-bg='custom' class='w-8 h-8 rounded border-2 border-border relative select-none cursor-pointer' title='Custom'>
+				<ColorPickerIcon class='w-full h-full absolute inset-0 pointer-events-none' />
+				<div
+					id='custom-color-popover'
+					class='hidden absolute bottom-[calc(100%+8px)] right-0 z-50 w-64 max-w-[90vw] overflow-visible rounded-md border bg-popover text-popover-foreground shadow-sm p-0'
+				>
+					<div class='p-3 max-h-[80vh] overflow-auto'>
+						<canvas id='custom-color-canvas' width='240' height='140' class='w-full h-[140px] rounded'></canvas>
+						<div class='mt-2 flex items-center gap-2'>
+							<div id='custom-color-preview' class='w-5 h-5 rounded border'></div>
+							<input id='custom-color-hex' type='text' class='flex-1 px-2 py-1 text-sm rounded border bg-background' placeholder='#ffffff' />
+						</div>
+					</div>
+				</div>
+			</button>
+		</div>
+
+		<SwitchRow id='frame-toggle-switch' label='Show Frame' class='mt-3' />
+		<SwitchRow id='loop-toggle-switch' label='Loop Playback' checked class='mt-3' />
+		<SwitchRow id='ignore-opacity-switch' label='Ignore Opacity' class='mt-3' />
+	</CardContent>
+</Card>

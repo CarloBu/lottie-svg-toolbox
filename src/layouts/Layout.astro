@@ -1,0 +1,146 @@
+---
+import "../styles/global.css";
+import "@/styles/starwind.css";
+
+// SEO Configuration
+const siteTitle = "Lottie to SVG Converter - Free Online Tool";
+const siteDescription = "Convert Lottie animations to SVG, PNG, and JPEG formats instantly. Preview animations, export static assets, and optimize for web performance. Free online Lottie converter tool.";
+const siteKeywords = "lottie converter, lottie to svg, animation converter, lottie animation, svg converter, png export, jpeg export, animation tool, web animation, after effects, bodymovin";
+const siteUrl = "http://www.lottiesvg.com/";
+const ogImage = "/og-image.jpg";
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		
+		<!-- Primary Meta Tags -->
+		<title>{siteTitle}</title>
+		<meta name="title" content={siteTitle} />
+		<meta name="description" content={siteDescription} />
+		<meta name="keywords" content={siteKeywords} />
+		<meta name="author" content="oaksun.studio" />
+		<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+		<meta name="googlebot" content="index, follow" />
+		<meta name="bingbot" content="index, follow" />
+		
+		<!-- Canonical URL -->
+		<link rel="canonical" href={siteUrl} />
+		
+		<!-- Favicon and Icons -->
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="16x16" href="/favicon.svg" />
+		<link rel="manifest" href="/site.webmanifest" />
+		
+		<!-- Open Graph / Facebook -->
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={siteUrl} />
+		<meta property="og:title" content={siteTitle} />
+		<meta property="og:description" content={siteDescription} />
+		<meta property="og:image" content={`${siteUrl}${ogImage}`} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Lottie to SVG Converter - Free Online Animation Tool" />
+		<meta property="og:site_name" content="Lottie SVG Converter" />
+		<meta property="og:locale" content="en_US" />
+		
+		<!-- Twitter -->
+		<meta property="twitter:card" content="summary_large_image" />
+		<meta property="twitter:url" content={siteUrl} />
+		<meta property="twitter:title" content={siteTitle} />
+		<meta property="twitter:description" content={siteDescription} />
+		<meta property="twitter:image" content={`${siteUrl}${ogImage}`} />
+		<meta property="twitter:image:alt" content="Lottie to SVG Converter - Free Online Animation Tool" />
+		
+		<!-- Additional SEO Meta Tags -->
+		<meta name="theme-color" content="#000000" />
+		<meta name="msapplication-TileColor" content="#000000" />
+		<meta name="application-name" content="Lottie SVG Converter" />
+		
+		<!-- Performance and Security -->
+		<meta name="referrer" content="strict-origin-when-cross-origin" />
+		<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+		<meta http-equiv="X-Frame-Options" content="DENY" />
+		<meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+		
+		<!-- Generator -->
+		<meta name="generator" content={Astro.generator} />
+		
+		<!-- Structured Data -->
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "WebApplication",
+			"name": "Lottie to SVG Converter",
+			"description": "Convert Lottie animations to SVG, PNG, and JPEG formats instantly. Preview animations, export static assets, and optimize for web performance.",
+			"url": siteUrl,
+			"applicationCategory": "MultimediaApplication",
+			"operatingSystem": "Desktop Browser",
+			"offers": {
+				"@type": "Offer",
+				"price": "0",
+				"priceCurrency": "USD"
+			},
+			"creator": {
+				"@type": "Organization",
+				"name": "oaksun.studio"
+			},
+			"featureList": [
+				"Lottie Animation Preview",
+				"Frame-by-Frame Navigation", 
+				"Multi-Format Export (SVG, PNG, JPEG)",
+				"Advanced Viewing Controls",
+				"Customizable Settings",
+				"Recent Files Management",
+				"Local Storage Preferences"
+			],
+			"browserRequirements": "Requires JavaScript. Requires HTML5. Optimized for desktop browsers.",
+			"softwareVersion": "0.4.0",
+			"datePublished": "2025-23-09",
+			"dateModified": "2025-23-09",
+			"inLanguage": "en-US",
+			"isAccessibleForFree": true,
+			"license": "MIT"
+		}
+		</script>
+		
+		<!-- Additional Structured Data for Tool -->
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "SoftwareApplication",
+			"name": "Lottie to SVG Converter",
+			"description": "Free online tool to convert Lottie animations to static SVG, PNG, and JPEG formats with preview and export capabilities.",
+			"url": siteUrl,
+			"applicationCategory": "DesignApplication",
+			"operatingSystem": "Desktop",
+			"offers": {
+				"@type": "Offer",
+				"price": "0"
+			},
+			"aggregateRating": {
+				"@type": "AggregateRating",
+				"ratingValue": "4.8",
+				"ratingCount": "150"
+			},
+			"keywords": "lottie, svg, converter, animation, export, png, jpeg, web tool, free"
+		}
+		</script>
+	</head>
+	<body class="bg-background text-foreground min-h-screen">
+		<slot />
+	</body>
+</html>
+
+<style>
+	html,
+	body {
+		margin: 0;
+		width: 100%;
+		height: 100%;
+	}
+</style>

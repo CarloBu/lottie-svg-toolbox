@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* Preview container background classes */
+.preview-bg-white {
+	background-color: white;
+}
+.preview-bg-gray {
+	background-color: #c2c2cc;
+}
+.preview-bg-dark-gray {
+	background-color: #9b9ba9;
+}
+.preview-bg-black {
+	background-color: #111111;
+}
+.preview-bg-checkers {
+	background-image:
+		linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+		linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+	background-size: 20px 20px;
+	background-position:
+		0 0,
+		0 10px,
+		10px -10px,
+		-10px 0px;
+	background-color: #f9fafb;
+}
+
+/* Active state for background toggle buttons */
+.bg-toggle-active {
+	border-color: hsl(var(--ring)) !important;
+	box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+/* Popover arrow */
+#custom-color-popover::after {
+	content: "";
+	position: absolute;
+	bottom: -6px;
+	left: 50%;
+	transform: translateX(-50%);
+	border-width: 6px 6px 0 6px;
+	border-style: solid;
+	border-color: var(--border) transparent transparent transparent;
+}
+
+/* Inner arrow to match surface */
+#custom-color-popover::before {
+	content: "";
+	position: absolute;
+	bottom: -5px;
+	left: 50%;
+	transform: translateX(-50%);
+	border-width: 5px 5px 0 5px;
+	border-style: solid;
+	border-color: hsl(var(--popover)) transparent transparent transparent;
+}
+
+/* Loop toggle off style: visually dashed/disabled */
+.loop-off {
+	text-decoration: line-through;
+	text-decoration-style: dashed;
+	opacity: 0.6;
+}

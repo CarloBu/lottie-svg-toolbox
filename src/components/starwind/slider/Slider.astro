@@ -1,0 +1,456 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { tv, type VariantProps } from "tailwind-variants";
+
+interface Props extends HTMLAttributes<"div">, VariantProps<typeof slider> {
+	min?: number;
+	max?: number;
+	step?: number;
+	value?: number | number[];
+	defaultValue?: number | number[];
+	name?: string;
+	disabled?: boolean;
+	orientation?: "horizontal" | "vertical";
+	onValueChange?: string; // Function name to call on value change
+}
+
+const {
+	min = 0,
+	max = 100,
+	step = 1,
+	value,
+	defaultValue = 0,
+	name,
+	disabled = false,
+	orientation = "horizontal",
+	onValueChange,
+	size,
+	class: className,
+	...rest
+} = Astro.props;
+
+const slider = tv({
+	base: [
+		"starwind-slider relative flex touch-none select-none items-center",
+		"data-[orientation=vertical]:flex-col data-[orientation=vertical]:h-full data-[orientation=vertical]:w-5",
+		"data-[orientation=horizontal]:w-full data-[orientation=horizontal]:h-5",
+	],
+	variants: {
+		size: {
+			sm: "data-[orientation=horizontal]:h-3 data-[orientation=vertical]:w-3",
+			md: "data-[orientation=horizontal]:h-5 data-[orientation=vertical]:w-5",
+			lg: "data-[orientation=horizontal]:h-6 data-[orientation=vertical]:w-6",
+		},
+	},
+	defaultVariants: {
+		size: "md",
+	},
+});
+
+const track = tv({
+	base: [
+		"relative grow overflow-hidden rounded-full bg-muted cursor-pointer",
+		"data-[orientation=vertical]:w-1.5 data-[orientation=vertical]:h-full",
+		"data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full",
+	],
+	variants: {
+		size: {
+			sm: "data-[orientation=horizontal]:h-1 data-[orientation=vertical]:w-1",
+			md: "data-[orientation=horizontal]:h-1.5 data-[orientation=vertical]:w-1.5",
+			lg: "data-[orientation=horizontal]:h-2 data-[orientation=vertical]:w-2",
+		},
+	},
+	defaultVariants: {
+		size: "md",
+	},
+});
+
+const thumb = tv({
+	base: [
+		"absolute block rounded-full border border-primary/50 bg-background shadow transition-colors z-10",
+		"focus:outline-none focus:ring-1 focus:ring-ring",
+		"disabled:pointer-events-none disabled:opacity-50",
+		"hover:border-primary hover:border-2 hover:shadow-sm",
+		"active:scale-95",
+		"cursor-pointer",
+	],
+	variants: {
+		size: {
+			sm: "h-3 w-3",
+			md: "h-4 w-4",
+			lg: "h-5 w-5",
+		},
+	},
+	defaultVariants: {
+		size: "md",
+	},
+});
+
+// Handle both array and single number formats for backward compatibility
+const getCurrentValue = (val: number | number[] | undefined, def: number | number[]) => {
+	if (val !== undefined) {
+		return Array.isArray(val) ? val[0] : val;
+	}
+	return Array.isArray(def) ? def[0] : def;
+};
+
+const currentValue = getCurrentValue(value, defaultValue);
+const percentage = ((currentValue - min) / (max - min)) * 100;
+---
+
+<div
+	class={slider({ size, class: className })}
+	data-orientation={orientation}
+	data-disabled={disabled}
+	data-min={min}
+	data-max={max}
+	data-step={step}
+	data-value={currentValue}
+	{...rest}
+>
+	<div class={track({ size })} data-orientation={orientation}>
+		<div
+			class='absolute bg-primary data-[orientation=vertical]:w-full data-[orientation=horizontal]:h-full'
+			data-orientation={orientation}
+			style={orientation === "horizontal" ? `left: 0%; width: ${percentage}%` : `bottom: 0%; height: ${percentage}%`}
+		>
+		</div>
+	</div>
+	<input
+		type='range'
+		name={name}
+		min={min}
+		max={max}
+		step={step}
+		value={currentValue}
+		disabled={disabled}
+		class='sr-only'
+		data-orientation={orientation}
+		data-on-value-change={onValueChange}
+	/>
+	<div
+		class={thumb({ size })}
+		data-orientation={orientation}
+		style={orientation === "horizontal" ? `left: ${percentage}%; transform: translateX(-50%)` : `bottom: ${percentage}%; transform: translateY(50%)`}
+		role='slider'
+		tabindex={disabled ? -1 : 0}
+		aria-valuenow={currentValue}
+		aria-valuemin={min}
+		aria-valuemax={max}
+		aria-disabled={disabled}
+	>
+	</div>
+</div>
+
+<script>
+	class SliderHandler {
+		private slider: HTMLElement;
+		private input: HTMLInputElement;
+		private thumb: HTMLElement;
+		private range: HTMLElement;
+		private track: HTMLElement;
+		private isDragging = false;
+		private onValueChange?: (value: number) => void;
+		private observer!: MutationObserver;
+
+		constructor(slider: HTMLElement) {
+			this.slider = slider;
+			this.input = slider.querySelector('input[type="range"]') as HTMLInputElement;
+			this.thumb = slider.querySelector('[role="slider"]') as HTMLElement;
+			this.range = slider.querySelector(".bg-primary") as HTMLElement;
+			this.track = slider.children[0] as HTMLElement;
+
+			if (!this.input || !this.thumb || !this.range || !this.track) return;
+
+			// Setup onValueChange callback
+			const onValueChangeFn = this.input.dataset.onValueChange;
+			if (onValueChangeFn && typeof (window as any)[onValueChangeFn] === "function") {
+				this.onValueChange = (window as any)[onValueChangeFn];
+			}
+
+			this.init();
+
+			// Initial sync from attributes (align with Progress component behavior)
+			this.syncFromAttributes();
+			this.setupMutationObserver();
+		}
+
+		private init() {
+			this.setupEvents();
+		}
+
+		private setupEvents() {
+			// Keyboard support
+			this.thumb.addEventListener("keydown", (e) => this.handleKeyDown(e));
+
+			// Mouse support
+			this.thumb.addEventListener("mousedown", (e) => this.handleMouseDown(e));
+			this.track.addEventListener("click", (e) => this.handleTrackClick(e));
+			// Allow pick-and-drag starting from track or range fill
+			this.track.addEventListener("mousedown", (e) => this.handleTrackMouseDown(e));
+			this.range.addEventListener("mousedown", (e) => this.handleTrackMouseDown(e));
+
+			// Touch support
+			this.thumb.addEventListener("touchstart", (e) => this.handleTouchStart(e), { passive: false });
+			this.track.addEventListener("touchstart", (e) => this.handleTrackTouchStart(e), { passive: false });
+			this.range.addEventListener("touchstart", (e) => this.handleTrackTouchStart(e), { passive: false });
+
+			// Global mouse/touch events
+			document.addEventListener("mousemove", (e) => this.handleMouseMove(e));
+			document.addEventListener("mouseup", () => this.handleMouseUp());
+			document.addEventListener("touchmove", (e) => this.handleTouchMove(e), { passive: false });
+			document.addEventListener("touchend", () => this.handleTouchEnd());
+
+			// Update on input change
+			this.input.addEventListener("input", () => this.handleInputChange());
+		}
+
+		private handleKeyDown(e: KeyboardEvent) {
+			if (this.input.disabled) return;
+
+			const min = parseFloat(this.input.min);
+			const max = parseFloat(this.input.max);
+			const step = parseFloat(this.input.step);
+			let value = parseFloat(this.input.value);
+
+			switch (e.key) {
+				case "ArrowLeft":
+				case "ArrowDown":
+					e.preventDefault();
+					value = Math.max(min, value - step);
+					break;
+				case "ArrowRight":
+				case "ArrowUp":
+					e.preventDefault();
+					value = Math.min(max, value + step);
+					break;
+				case "Home":
+					e.preventDefault();
+					value = min;
+					break;
+				case "End":
+					e.preventDefault();
+					value = max;
+					break;
+				default:
+					return;
+			}
+
+			this.updateValue(value);
+		}
+
+		private handleMouseDown(e: MouseEvent) {
+			if (this.input.disabled) return;
+			e.preventDefault();
+			this.isDragging = true;
+			this.thumb.focus();
+		}
+
+		private handleTouchStart(e: TouchEvent) {
+			if (this.input.disabled) return;
+			e.preventDefault();
+			this.isDragging = true;
+			this.thumb.focus();
+		}
+
+		private handleMouseMove(e: MouseEvent) {
+			if (!this.isDragging || this.input.disabled) return;
+			e.preventDefault();
+			this.updateFromPointer(e.clientX, e.clientY);
+		}
+
+		private handleTouchMove(e: TouchEvent) {
+			if (!this.isDragging || this.input.disabled) return;
+			e.preventDefault();
+			const touch = e.touches[0];
+			this.updateFromPointer(touch.clientX, touch.clientY);
+		}
+
+		private handleMouseUp() {
+			this.isDragging = false;
+		}
+
+		private handleTouchEnd() {
+			this.isDragging = false;
+		}
+
+		private handleTrackClick(e: MouseEvent) {
+			if (this.input.disabled) return;
+			e.preventDefault();
+			this.updateFromPointer(e.clientX, e.clientY);
+			this.thumb.focus();
+		}
+
+		private handleTrackMouseDown(e: MouseEvent) {
+			if (this.input.disabled) return;
+			e.preventDefault();
+			this.isDragging = true;
+			this.updateFromPointer(e.clientX, e.clientY);
+			this.thumb.focus();
+		}
+
+		private handleTrackTouchStart(e: TouchEvent) {
+			if (this.input.disabled) return;
+			e.preventDefault();
+			this.isDragging = true;
+			const touch = e.touches[0];
+			this.updateFromPointer(touch.clientX, touch.clientY);
+			this.thumb.focus();
+		}
+
+		private handleInputChange() {
+			this.updateUI();
+			if (this.onValueChange) {
+				this.onValueChange(parseFloat(this.input.value));
+			}
+		}
+
+		private updateFromPointer(clientX: number, clientY: number) {
+			const rect = this.track.getBoundingClientRect();
+			const orientation = this.slider.dataset.orientation || "horizontal";
+			const min = parseFloat(this.input.min);
+			const max = parseFloat(this.input.max);
+
+			let percentage: number;
+
+			if (orientation === "horizontal") {
+				percentage = (clientX - rect.left) / rect.width;
+			} else {
+				percentage = (rect.bottom - clientY) / rect.height;
+			}
+
+			percentage = Math.max(0, Math.min(1, percentage));
+			const value = min + percentage * (max - min);
+			const step = parseFloat(this.input.step);
+			const steppedValue = Math.round(value / step) * step;
+
+			this.updateValue(steppedValue);
+		}
+
+		private updateValue(value: number) {
+			const min = parseFloat(this.input.min);
+			const max = parseFloat(this.input.max);
+			const clampedValue = Math.max(min, Math.min(max, value));
+
+			this.input.value = clampedValue.toString();
+			this.updateUI();
+
+			// Dispatch input event
+			this.input.dispatchEvent(new Event("input", { bubbles: true }));
+
+			if (this.onValueChange) {
+				this.onValueChange(clampedValue);
+			}
+		}
+
+		private updateUI() {
+			const min = parseFloat(this.input.min);
+			const max = parseFloat(this.input.max);
+			const value = parseFloat(this.input.value);
+			const percentage = ((value - min) / (max - min)) * 100;
+			const orientation = this.slider.dataset.orientation || "horizontal";
+
+			// Update thumb position
+			if (orientation === "horizontal") {
+				this.thumb.style.left = `${percentage}%`;
+				this.thumb.style.transform = "translateX(-50%)";
+			} else {
+				this.thumb.style.bottom = `${percentage}%`;
+				this.thumb.style.transform = "translateY(50%)";
+			}
+
+			// Update range fill
+			if (orientation === "horizontal") {
+				this.range.style.width = `${percentage}%`;
+			} else {
+				this.range.style.height = `${percentage}%`;
+			}
+
+			// Update ARIA attributes
+			this.thumb.setAttribute("aria-valuenow", value.toString());
+		}
+
+		// Programmatic external update that does NOT emit input/onValueChange
+		public setValueFromExternal(value: number) {
+			const min = parseFloat(this.input.min);
+			const max = parseFloat(this.input.max);
+			const clampedValue = Math.max(min, Math.min(max, value));
+			this.input.value = clampedValue.toString();
+			this.updateUI();
+		}
+
+		// Observe data-* attributes on the root to keep the UI in sync (mirrors Progress component approach)
+		private setupMutationObserver(): void {
+			this.observer = new MutationObserver((mutations) => {
+				let shouldSync = false;
+				for (const mutation of mutations) {
+					if (!mutation.attributeName) continue;
+					if (
+						mutation.attributeName === "data-value" ||
+						mutation.attributeName === "data-min" ||
+						mutation.attributeName === "data-max" ||
+						mutation.attributeName === "data-step" ||
+						mutation.attributeName === "data-disabled" ||
+						mutation.attributeName === "data-orientation"
+					) {
+						shouldSync = true;
+					}
+				}
+				if (shouldSync) this.syncFromAttributes();
+			});
+			this.observer.observe(this.slider, { attributes: true });
+		}
+
+		private syncFromAttributes(): void {
+			// Sync min/max/step first so clamping uses updated bounds
+			const dsMin = this.slider.getAttribute("data-min");
+			const dsMax = this.slider.getAttribute("data-max");
+			const dsStep = this.slider.getAttribute("data-step");
+			if (dsMin != null && !Number.isNaN(parseFloat(dsMin))) this.input.min = parseFloat(dsMin).toString();
+			if (dsMax != null && !Number.isNaN(parseFloat(dsMax))) this.input.max = parseFloat(dsMax).toString();
+			if (dsStep != null && !Number.isNaN(parseFloat(dsStep))) this.input.step = parseFloat(dsStep).toString();
+
+			// Sync disabled state
+			const dsDisabled = this.slider.getAttribute("data-disabled");
+			if (dsDisabled != null) this.input.disabled = dsDisabled === "true";
+
+			// Sync value without emitting input/onValueChange
+			const dsValue = this.slider.getAttribute("data-value");
+			if (dsValue != null && !Number.isNaN(parseFloat(dsValue))) {
+				this.setValueFromExternal(parseFloat(dsValue));
+			} else {
+				// If value not provided, still update UI in case bounds/orientation changed
+				this.updateUI();
+			}
+		}
+	}
+
+	// Store instances in a WeakMap to avoid memory leaks
+	const sliderInstances = new WeakMap<HTMLElement, SliderHandler>();
+	// Store instances by input name for easy external access
+	const sliderByName = new Map<string, SliderHandler>();
+
+	const setupSliders = () => {
+		document.querySelectorAll<HTMLElement>(".starwind-slider").forEach((slider) => {
+			if (!sliderInstances.has(slider)) {
+				const instance = new SliderHandler(slider);
+				sliderInstances.set(slider, instance);
+				const input = slider.querySelector('input[type="range"]') as HTMLInputElement | null;
+				if (input && input.name) {
+					sliderByName.set(input.name, instance);
+				}
+			}
+		});
+	};
+
+	setupSliders();
+
+	// Expose a minimal API for external programmatic updates
+	(window as any).StarwindSlider = (window as any).StarwindSlider || {};
+	(window as any).StarwindSlider.setValue = (name: string, value: number) => {
+		const instance = sliderByName.get(name);
+		if (instance) {
+			instance.setValueFromExternal(value);
+		}
+	};
+</script>
