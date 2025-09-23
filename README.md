@@ -1,15 +1,16 @@
-# Lottie to SVG Converter
+# Lottie & SVG Preview Toolbox
 
 A powerful web-based toolbox for previewing Lottie animations and converting them to static SVG, PNG, and JPEG formats. Built with Astro and Starwind UI.
 
 ## Features
 
-- **Lottie Animation Preview**: Load and preview Lottie animations with full playback controls
+- **Lottie Animation Viewer**: Load and preview Lottie animations with full playback controls
+- **SVG File Viewer**: View and inspect SVG files with zoom and pan capabilities
 - **Frame-by-Frame Navigation**: Scrub through animation frames with timeline controls
+- **Advanced Viewing Controls**: Zoom, pan, and fit-to-screen options for detailed inspection
 - **Multi-Format Export**: Export to SVG, PNG (transparent), or JPEG formats
-- **Advanced Viewing**: Zoom controls, pan support, and fit-to-screen options
 - **Customizable Settings**: Adjust compression, resolution, and optimization options
-- **Recent Files**: Quick access to recently opened Lottie files
+- **Recent Files**: Quick access to recently opened Lottie and SVG files
 - **Local Storage**: Preferences and recent files are saved locally
 - **Modern UI**: Clean, responsive interface built with Astro and Tailwind CSS
 
@@ -43,17 +44,19 @@ A powerful web-based toolbox for previewing Lottie animations and converting the
 
 ## How to Use
 
-### Loading a Lottie Animation
+### Loading Files
 
-1. **Drag & Drop**: Simply drag a `.json` Lottie file onto the upload area
+1. **Drag & Drop**: Simply drag a `.json` Lottie file or `.svg` file onto the upload area
 2. **Click to Browse**: Click the upload area to open a file browser
 3. **Recent Files**: Access recently opened files from the left sidebar
 
 ### Previewing Animations
 
-- **Play/Pause**: Use the play button to control animation playback
-- **Frame Navigation**: Use the timeline slider to scrub through frames
-- **Loop Control**: Toggle looping on/off
+- **Lottie Animations**:
+  - **Play/Pause**: Use the play button to control animation playback
+  - **Frame Navigation**: Use the timeline slider to scrub through frames
+  - **Loop Control**: Toggle looping on/off
+- **SVG Files**: Static viewing with zoom and pan controls
 - **Zoom Controls**: 
   - Use mouse wheel to zoom in/out
   - Click and drag to pan when zoomed
@@ -109,8 +112,10 @@ src/
 
 ## Use Cases
 
+- **Animation Review**: Preview and inspect Lottie animations before implementation
+- **SVG Inspection**: View and analyze SVG files with detailed zoom capabilities
+- **Design Workflows**: Review animations and vector graphics for design systems
 - **Web Development**: Convert Lottie animations to static assets for faster loading
-- **Design Workflows**: Preview and export Lottie animations for design systems
 - **Performance Optimization**: Create lightweight SVG alternatives to heavy animations
 - **Cross-Platform Assets**: Generate static images for platforms that don't support Lottie
 
@@ -126,6 +131,7 @@ The application automatically saves your preferences including:
 
 ### Input
 - **Lottie JSON files** (`.json`) - Standard Lottie animation format
+- **SVG files** (`.svg`) - Scalable vector graphics format
 
 ### Output
 - **SVG** - Vector format with optional compression

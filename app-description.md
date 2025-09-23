@@ -1,95 +1,54 @@
-Lottie to SVG Converter
-Convert a frame of a Lottie animation into an SVG. You may also be interested in the Gatsby Remark plugin that uses this project.
+Lottie & SVG Preview Toolbox
+A powerful web-based viewer for Lottie animations and SVG files with advanced preview controls and conversion capabilities.
 
-Convert this animation to a standard SVG:
+Preview and inspect your files:
 
-Animation	Static SVG
+Lottie Animation	SVG File
 animation	SVG
-This SVG is converted from this animation from Lottie Files.
+This tool allows you to preview Lottie animations and SVG files with detailed viewing controls.
 
-Note that this README shows the animation as a GIF since I can't load the lottie scripts in a README.
+What can you do?
+- **Preview Lottie animations** with frame-by-frame navigation
+- **View SVG files** with zoom and pan capabilities  
+- **Export to multiple formats** (SVG, PNG, JPEG)
+- **Inspect details** with advanced viewing controls
 
-Wait, just one frame?
-Yes, just one frame. This can be useful to show a preview of your animation as an SVG before the lottie animation script has fully loaded.
+Perfect for:
+- **Designers** reviewing animations and vector graphics
+- **Developers** inspecting Lottie files before implementation
+- **Teams** collaborating on animation assets
+- **Anyone** who needs to preview and export animation frames
 
-If you found this project because you wanted to convert your full lottie animation to an animated SVG, sorry, I can't help you. I would even go so far as to argue that you shouldn't want to do that. There is debate out there on whether CSS animations (which an animated SVG would use) is better/faster/stronger than JS animations. JS animations win. Keep using lottie. Be happy.
+This tool focuses on previewing and inspecting your files, with the ability to export static frames when needed.
 
-If you still aren't convinced, there are other projects out there to convert your full lottie animation into other file types:
+## Features
 
-lottie-node
-puppeteer-lottie
-Usage
-npm install lottie-to-svg
-const fs = require("fs");
-const renderSvg = require("lottie-to-svg");
-
-const animationData = JSON.parse(fs.readFileSync(`myanim.json`, "utf8"));
-
-renderSvg(animationData).then(svg => {
-  fs.writeFileSync(`myanim.svg`, svg, "utf8");
-});
-Render Settings
-You can pass render settings for lottie-web (which does the actual rendering of the animation) as the second argument to renderSvg. See full list of available options.
-
-Frame Number
-You can pass a frame number (to render a specific frame) as the third argument to renderSvg. By default it will render the first frame.
+- **Drag & Drop Interface**: Simply drag your Lottie or SVG files to get started
+- **Frame-by-Frame Navigation**: Scrub through animation frames with precise control
+- **Zoom & Pan**: Inspect details with mouse wheel zoom and click-drag panning
+- **Multiple Export Formats**: Export to SVG, PNG, or JPEG with customizable settings
+- **Recent Files**: Quick access to your recently viewed files
+- **Customizable Backgrounds**: Choose from various background options for better viewing
+- **Local Storage**: Your preferences and recent files are saved automatically
 
 
 
 
-How It Works
-lottie-web only supports rendering in a browser environment. This project uses jsdom to fool lottie-web into rendering in a node environment.
+## How to Use
 
-It uses lottie's SVG renderer to render one frame of the animation and then pulls the outputted SVG out of jsdom and then gives it to you, dear user, to do what you will with it.
+1. **Load a File**: Drag and drop a Lottie (.json) or SVG file onto the upload area
+2. **Preview**: Use the viewing controls to inspect your file
+   - For Lottie: Play/pause, scrub through frames, toggle looping
+   - For SVG: Zoom and pan to examine details
+3. **Export**: Choose your desired format and settings, then download
 
+## Technical Details
 
-const { JSDOM } = require("jsdom");
+Built with modern web technologies:
+- **Astro** for the web framework
+- **Lottie Web** for animation rendering
+- **SVGO** for SVG optimization
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
 
-module.exports = async (animationData, opts, frameNumber) => {
-	const { window } = new JSDOM("<!DOCTYPE html><body></body>", {
-		pretendToBeVisual: true
-	});
-
-	const { document, navigator } = window;
-
-	// have to trick lottie into thinking it's running in a browser
-	global.window = window;
-	global.navigator = navigator;
-	global.document = document;
-
-	// load the lottie renderer late after globals are set
-	const renderToDom = require("./render");
-
-	const result = await renderToDom(
-		document,
-		animationData,
-		opts || {},
-		frameNumber || 0
-	);
-	return result;
-};
-const lottie = require("lottie-web");
-
-module.exports = (document, animationData, opts, frameNumber) =>
-	new Promise((resolve, reject) => {
-		try {
-			const container = document.createElement("div");
-			document.body.append(container);
-
-			var instance = lottie.loadAnimation({
-				container: container,
-				renderer: "svg",
-				loop: false,
-				autoplay: false,
-				animationData,
-				rendererSettings: opts
-			});
-
-			instance.addEventListener("DOMLoaded", () => {
-				instance.goToAndStop(frameNumber, true);
-				resolve(container.innerHTML);
-			});
-		} catch (err) {
-			reject(err);
-		}
-	});
+The tool runs entirely in your browser - no server processing required for previewing files.
