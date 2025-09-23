@@ -1,7 +1,4 @@
 ---
-import LottieFileIcon from "@/assets/lottieFile.svg";
-import SvgFileIcon from "@/assets/svgFile.svg";
-import TrashcanIcon from "@/assets/trashcanSvg.svg";
 import { Card, CardHeader, CardContent } from "../starwind/card";
 ---
 
@@ -64,7 +61,7 @@ import { Card, CardHeader, CardContent } from "../starwind/card";
 			const li = document.createElement("li");
 			li.className = "flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-muted cursor-pointer select-none";
 			const isSvg = it.name.toLowerCase().endsWith(".svg");
-			const iconSrc = isSvg ? "/src/assets/svgFile.svg" : "/src/assets/lottieFile.svg";
+			const iconSrc = isSvg ? "/svgFile.svg" : "/lottieFile.svg";
 			li.innerHTML = `
 				<img src="${iconSrc}" alt="${isSvg ? "SVG" : "JSON"} file" class="w-5 h-5 flex-shrink-0" />
 				<div class="flex-1 truncate">
@@ -72,7 +69,7 @@ import { Card, CardHeader, CardContent } from "../starwind/card";
 					<div class="text-[11px] text-muted-foreground">${Math.round(it.size / 1024)} KB • ${formatAgo(it.lastOpened)}</div>
 				</div>
 				<button aria-label="Remove" class="ml-2 text-muted-foreground hover:text-foreground p-1" data-name="${it.name}" data-size="${it.size}">
-					<img src="/src/assets/trashcanSvg.svg" alt="Remove" class="w-3 h-3" />
+					<img src="/trashcanSvg.svg" alt="Remove" class="w-3 h-3" />
 				</button>
 			`;
 			li.addEventListener("click", () => {
