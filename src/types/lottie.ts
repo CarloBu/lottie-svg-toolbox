@@ -34,6 +34,8 @@ export interface DOMElements {
 	aggressiveOptimizationCheckbox: HTMLButtonElement | null;
 	downloadBtn: HTMLButtonElement | null;
 	playBtn: HTMLButtonElement | null;
+	prevBtn?: HTMLButtonElement | null;
+	nextBtn?: HTMLButtonElement | null;
 	loopCheckbox: HTMLButtonElement | null;
 	// Export controls
 	exportFormatSelect: HTMLSelectElement | null;

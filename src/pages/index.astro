@@ -15,6 +15,7 @@ import ViewerSettings from "@/components/rightSidebar/ViewerSettings.astro";
 import ExportPanel from "@/components/rightSidebar/ExportPanel.astro";
 import AnimationDetails from "@/components/rightSidebar/AnimationDetails.astro";
 import TimelineControls from "@/components/timeline/TimelineControls.astro";
+import WelcomeDialog from "@/components/WelcomeDialog.astro";
 ---
 
 <Layout>
@@ -49,6 +50,9 @@ import TimelineControls from "@/components/timeline/TimelineControls.astro";
 				<TimelineControls />
 			</div>
 		</div>
+
+		<!-- Welcome Dialog -->
+		<WelcomeDialog />
 
 		<!-- Studio Sticker -->
 		<div class='fixed bottom-8 right-8 z-30'>

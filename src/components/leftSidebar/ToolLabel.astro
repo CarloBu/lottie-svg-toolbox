@@ -1,7 +1,10 @@
 ---
 import { Label } from "@/components/starwind/label";
+import { DialogTrigger } from "@/components/starwind/dialog";
 ---
 
-<section class='design-card text-card-foreground'>
-	<Label class='text-base font-semibold text-center block'>Lottie SVG Preview Toolbox</Label>
-</section>
+<DialogTrigger for='welcome-dialog' asChild>
+	<section class='design-card text-card-foreground cursor-pointer hover:bg-card-hover transition-colors select-none'>
+		<Label class='text-base font-semibold text-center block pointer-events-none'> Lottie SVG Preview Toolbox </Label>
+	</section>
+</DialogTrigger>

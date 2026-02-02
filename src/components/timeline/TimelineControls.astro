@@ -13,6 +13,30 @@ import { Button } from "@/components/starwind/button";
 				<span id='total-frames' class='inline-block text-left tabular-nums'>0</span>
 			</span>
 		</div>
+		<div class='flex items-center gap-0.5'>
+			<Button
+				id='prev-btn'
+				variant='ghost'
+				class='h-8 w-8 p-0 disabled:opacity-30'
+				aria-label='Previous frame'
+				disabled
+			>
+				<svg class='w-4 h-4' fill='currentColor' viewBox='0 0 24 24' aria-hidden='true'>
+					<path d='M6 6h2v12H6zm3.5 6l8.5 6V6z'></path>
+				</svg>
+			</Button>
+			<Button
+				id='next-btn'
+				variant='ghost'
+				class='h-8 w-8 p-0 disabled:opacity-30'
+				aria-label='Next frame'
+				disabled
+			>
+				<svg class='w-4 h-4' fill='currentColor' viewBox='0 0 24 24' aria-hidden='true'>
+					<path d='M6 18l8.5-6L6 6zm9-12h2v12h-2z'></path>
+				</svg>
+			</Button>
+		</div>
 		<Slider
 			id='frame-slider'
 			name='frame-slider'
@@ -27,7 +51,7 @@ import { Button } from "@/components/starwind/button";
 			id='play-btn'
 			variant='default'
 			size='sm'
-			class='select-none ml-2 disabled:bg-card disabled:text-card-foreground disabled:border disabled:border-border disabled:opacity-50'
+			class='select-none ml-2 min-w-[80px] disabled:bg-card disabled:text-card-foreground disabled:border disabled:border-border disabled:opacity-50'
 			disabled
 		>
 			<svg class='w-4 h-4 mr-2' fill='currentColor' viewBox='0 0 24 24' aria-hidden='true'>

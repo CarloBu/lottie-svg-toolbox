@@ -1,4 +1,5 @@
 import lottie from "lottie-web";
+import { DotLottie } from "@dotlottie/dotlottie-js";
 import type { AnimationItem } from "lottie-web";
 import type { LottieConverterState, ConversionOptions, DOMElements } from "../types/lottie";
 import { downloadSVG, downloadRasterFromSVG } from "../utils/svg-utils";
@@ -24,6 +25,8 @@ export class LottieConverter {
 	private currentFileSize: number | null = null;
 
 	private hasInteractedSinceLoad: boolean = false;
+
+	private cachedSvg: SVGSVGElement | null = null;
 
 	// Panning helpers (not persisted)
 	private isPanning: boolean = false;
@@ -66,6 +69,8 @@ export class LottieConverter {
 			aggressiveOptimizationCheckbox: document.getElementById("aggressive-optimization") as HTMLButtonElement,
 			downloadBtn: document.getElementById("download-btn") as HTMLButtonElement,
 			playBtn: document.getElementById("play-btn") as HTMLButtonElement,
+			prevBtn: document.getElementById("prev-btn") as HTMLButtonElement,
+			nextBtn: document.getElementById("next-btn") as HTMLButtonElement,
 			loopCheckbox: document.getElementById("loop-toggle-switch") as HTMLButtonElement,
 			// Starwind Select builds a hidden select with the provided name
 			exportFormatSelect: document.querySelector('select[name="export-format"]') as HTMLSelectElement,
@@ -259,6 +264,14 @@ export class LottieConverter {
 			});
 			this.updatePlayButtonUI();
 		}
+
+		// Prev/Next buttons
+		if (this.elements.prevBtn) {
+			this.elements.prevBtn.addEventListener("click", () => this.prevFrame());
+		}
+		if (this.elements.nextBtn) {
+			this.elements.nextBtn.addEventListener("click", () => this.nextFrame());
+		}
 	}
 
 	// setupStripCheckbox removed
@@ -277,18 +290,22 @@ export class LottieConverter {
 		}
 	}
 
-	private handleFile(file: File) {
+	private async handleFile(file: File) {
 		const lower = file.name.toLowerCase();
 		const isJson = lower.endsWith(".json");
 		const isSvg = lower.endsWith(".svg");
-		if (!isJson && !isSvg) {
-			alert("Please select a .json (Lottie) or .svg file");
+		const isLottie = lower.endsWith(".lottie");
+
+		if (!isJson && !isSvg && !isLottie) {
+			alert("Please select a .json, .lottie, or .svg file");
 			return;
 		}
 
 		// Store the original filename (strip extension) and ext
-		this.state.originalFilename = isJson ? file.name.replace(/\.json$/i, "") : file.name.replace(/\.svg$/i, "");
-		this.state.originalFileExt = isJson ? ".json" : ".svg";
+		this.state.originalFilename = file.name.replace(/\.(json|svg|lottie)$/i, "");
+		if (isJson) this.state.originalFileExt = ".json";
+		else if (isSvg) this.state.originalFileExt = ".svg";
+		else if (isLottie) this.state.originalFileExt = ".lottie";
 
 		// store file size for details panel
 		this.state.fileSizeBytes = file.size;
@@ -296,6 +313,29 @@ export class LottieConverter {
 		// Track current file for recent files management
 		this.currentFileName = file.name;
 		this.currentFileSize = file.size;
+
+		if (isLottie) {
+			try {
+				const arrayBuffer = await file.arrayBuffer();
+				const dotlottie = await new DotLottie().fromArrayBuffer(arrayBuffer);
+				const animations = dotlottie.animations;
+				if (animations.length === 0) {
+					throw new Error("No animations found in .lottie file");
+				}
+				// Use the first animation
+				const animationData = await animations[0].toJSON({ inlineAssets: true });
+				this.state.animationData = animationData;
+				this.loadLottieAnimation();
+				try {
+					// Store the extracted JSON for recent files to allow reopening
+					saveRecentFile(file.name, file.size, JSON.stringify(animationData));
+				} catch {}
+			} catch (error) {
+				alert("Failed to load .lottie file. It might be corrupted.");
+				console.error(".lottie load error:", error);
+			}
+			return;
+		}
 
 		const reader = new FileReader();
 		reader.onload = (e) => {
@@ -325,8 +365,11 @@ export class LottieConverter {
 	// Public method: load from a JSON string (used by Recent Files)
 	public loadFromJSONString(filename: string, size: number, json: string) {
 		try {
-			this.state.originalFilename = filename.replace(/\.(json|svg)$/i, "");
-			this.state.originalFileExt = filename.toLowerCase().endsWith(".svg") ? ".svg" : ".json";
+			this.state.originalFilename = filename.replace(/\.(json|svg|lottie)$/i, "");
+			const lower = filename.toLowerCase();
+			if (lower.endsWith(".svg")) this.state.originalFileExt = ".svg";
+			else if (lower.endsWith(".lottie")) this.state.originalFileExt = ".lottie";
+			else this.state.originalFileExt = ".json";
 			this.state.animationData = JSON.parse(json);
 			// Preserve list order on open; only update on user interaction
 			this.state.fileSizeBytes = size;
@@ -357,6 +400,7 @@ export class LottieConverter {
 
 	private loadStaticSVG(svgString: string, filenameForDetails: string) {
 		if (!this.elements.lottieContainer) return;
+		this.hasInteractedSinceLoad = false;
 		// Clear any Lottie instance
 		if (this.state.animationInstance) {
 			this.state.animationInstance.destroy();
@@ -408,9 +452,11 @@ export class LottieConverter {
 		this.applyZoom();
 		this.waitForSvgAndReveal();
 
-		// Enable download and play button
+		// Enable download button, but disable playback controls for static SVG
 		if (this.elements.downloadBtn) this.elements.downloadBtn.disabled = false;
-		if (this.elements.playBtn) this.elements.playBtn.disabled = false;
+		if (this.elements.playBtn) this.elements.playBtn.disabled = true;
+		if (this.elements.prevBtn) this.elements.prevBtn.disabled = true;
+		if (this.elements.nextBtn) this.elements.nextBtn.disabled = true;
 
 		// Dispatch event to notify UI about file type change
 		document.dispatchEvent(new CustomEvent("lottie:fileLoaded", { detail: { isSVG: true } }));
@@ -419,6 +465,7 @@ export class LottieConverter {
 	private loadLottieAnimation() {
 		if (!this.elements.lottieContainer || !this.state.animationData) return;
 
+		this.hasInteractedSinceLoad = false;
 		// Clear previous animation
 		if (this.state.animationInstance) {
 			this.state.animationInstance.destroy();
@@ -434,7 +481,15 @@ export class LottieConverter {
 			loop: this.state.isLooping,
 			autoplay: false,
 			animationData: this.state.animationData,
+			rendererSettings: {
+				preserveAspectRatio: "xMidYMid meet",
+				progressiveLoad: false,
+				hideOnTransparent: false,
+			},
 		});
+
+		// Force integer frames to prevent "jumping" during playback (matches scrubbing behavior)
+		this.state.animationInstance.setSubframe(false);
 
 		this.state.animationInstance.addEventListener("DOMLoaded", () => {
 			if (!this.state.animationInstance) return;
@@ -503,9 +558,14 @@ export class LottieConverter {
 			if (this.elements.playBtn) {
 				this.elements.playBtn.disabled = false;
 			}
+			if (this.elements.prevBtn) {
+				this.elements.prevBtn.disabled = false;
+			}
+			if (this.elements.nextBtn) {
+				this.elements.nextBtn.disabled = false;
+			}
 
-			// Go to first frame (already set to 0 above) after ensuring SVG exists
-			this.state.animationInstance.goToAndStop(0, true);
+			// Ensure SVG exists, then apply zoom
 			this.applyZoom();
 			if (this.elements.currentFrameSpan) {
 				this.elements.currentFrameSpan.textContent = this.state.currentFrame.toString();
@@ -516,6 +576,10 @@ export class LottieConverter {
 				if (!this.state.animationInstance) return;
 				const frame = Math.round((this.state.animationInstance as AnimationItem).currentFrame || 0);
 				this.state.currentFrame = frame;
+
+				// Keep SVG position/zoom synced during playback to prevent layout jumps
+				this.applyZoom();
+
 				if (this.elements.currentFrameSpan) {
 					this.elements.currentFrameSpan.textContent = frame.toString();
 				}
@@ -539,9 +603,9 @@ export class LottieConverter {
 			// Ensure loop flag is applied to instance
 			(this.state.animationInstance as AnimationItem).loop = this.state.isLooping;
 
-			// Reset play state on new load
-			this.state.isPlaying = false;
-			this.updatePlayButtonUI();
+			// Automatically play on load
+			this.play();
+
 			// Update details panel now that all values are known
 			this.updateDetailsPanel();
 
@@ -831,7 +895,13 @@ export class LottieConverter {
 
 	private applyZoom() {
 		if (!this.elements.lottieContainer) return;
-		const svgElement = this.elements.lottieContainer.querySelector("svg") as SVGSVGElement;
+
+		// Cache SVG element to avoid repeated DOM lookups during playback
+		if (!this.cachedSvg || !this.cachedSvg.isConnected) {
+			this.cachedSvg = this.elements.lottieContainer.querySelector("svg");
+		}
+
+		const svgElement = this.cachedSvg;
 		if (!svgElement) return;
 
 		if (this.state.zoomMode === "fit") {
@@ -1097,6 +1167,16 @@ export class LottieConverter {
 		this.updatePlayButtonUI();
 	}
 
+	public prevFrame() {
+		if (!this.state.animationInstance) return;
+		this.setFrame(this.state.currentFrame - 1);
+	}
+
+	public nextFrame() {
+		if (!this.state.animationInstance) return;
+		this.setFrame(this.state.currentFrame + 1);
+	}
+
 	// Public method to set current frame
 	public setFrame(frame: number) {
 		if (!this.state.animationInstance) return;
@@ -1139,6 +1219,9 @@ export class LottieConverter {
 			this.state.animationInstance = null;
 		}
 
+		// Clear cached SVG
+		this.cachedSvg = null;
+
 		// Clear container
 		if (this.elements.lottieContainer) {
 			this.elements.lottieContainer.innerHTML = "";
@@ -1172,6 +1255,12 @@ export class LottieConverter {
 		}
 		if (this.elements.playBtn) {
 			this.elements.playBtn.disabled = true;
+		}
+		if (this.elements.prevBtn) {
+			this.elements.prevBtn.disabled = true;
+		}
+		if (this.elements.nextBtn) {
+			this.elements.nextBtn.disabled = true;
 		}
 
 		// Reset playback state and UI

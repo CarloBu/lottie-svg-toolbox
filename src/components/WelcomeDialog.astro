@@ -1,0 +1,111 @@
+---
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "./starwind/dialog";
+import { Button } from "./starwind/button";
+---
+
+<Dialog id='welcome-dialog'>
+	<DialogContent class='max-w-6xl w-[90vw] mx-auto'>
+		<DialogHeader class='px-8 pt-8'>
+			<DialogTitle class='text-3xl font-bold text-center mb-6'> Welcome to Lottie SVG Toolbox! </DialogTitle>
+		</DialogHeader>
+
+		<div class='space-y-6 text-gray-700 px-8'>
+			<p class='text-base leading-relaxed'>Hey there! I'm the creator of this tool, and I wanted to share a quick story with you.</p>
+
+			<p class='text-base leading-relaxed'>
+				A while back, I was looking for a simple way to preview Lottie animations and convert them to SVG format. Every tool I found was either
+				cluttered with ads, required sign-ups, or had questionable tracking practices. I just wanted something clean and straightforward!
+			</p>
+
+			<p class='text-base leading-relaxed'>
+				So I decided to build exactly what I needed - a simple, privacy-focused tool that just works. No accounts, no tracking, no ads. Just you and
+				your Lottie files.
+			</p>
+
+			<div class='bg-gray-50 border border-gray-200 rounded-lg p-6 my-8'>
+				<h3 class='font-semibold text-gray-900 mb-4 text-lg'>Try it out with these examples:</h3>
+				<div class='flex gap-4 flex-wrap'>
+					<button
+						class='px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors'
+						onclick="loadExampleFile('/lottie-example.json', 'lottie')"
+					>
+						Load Lottie Example
+					</button>
+					<button
+						class='px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors'
+						onclick="loadExampleFile('/svg-example.svg', 'svg')"
+					>
+						Load SVG Example
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<DialogFooter class='flex justify-center pt-8 pb-8 px-8'>
+			<DialogClose asChild>
+				<Button class='px-12 py-3 text-lg'> Get Started! </Button>
+			</DialogClose>
+		</DialogFooter>
+	</DialogContent>
+</Dialog>
+
+<script>
+	// Extend Window interface
+	declare global {
+		interface Window {
+			loadExampleFile: (filePath: string, type: "lottie" | "svg") => Promise<void>;
+		}
+	}
+
+	// Function to load example files through the uploader component
+	window.loadExampleFile = async (filePath: string, type: "lottie" | "svg") => {
+		try {
+			const response = await fetch(filePath);
+			const content = await response.text();
+			const fileName = filePath.split("/").pop() || "example";
+
+			// Create a File object to simulate file upload
+			const blob = new Blob([content], {
+				type: type === "lottie" ? "application/json" : "image/svg+xml",
+			});
+			const file = new File([blob], fileName, {
+				type: blob.type,
+				lastModified: Date.now(),
+			});
+
+			// Find the dropzone component and trigger file loading
+			const dropzone = document.getElementById("dz");
+			if (!dropzone) {
+				console.error("Dropzone not found");
+				return;
+			}
+
+			// Create a custom event to simulate file drop
+			const fileEvent = new CustomEvent("drop", {
+				detail: {
+					files: [file],
+					dataTransfer: {
+						files: [file],
+					},
+				},
+			});
+
+			// Trigger the dropzone file handling
+			dropzone.dispatchEvent(fileEvent);
+
+			// Also try to trigger the file input if the dropzone has one
+			const fileInput = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
+			if (fileInput) {
+				// Create a new FileList with our file
+				const dataTransfer = new DataTransfer();
+				dataTransfer.items.add(file);
+				fileInput.files = dataTransfer.files;
+
+				// Trigger the change event
+				fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+			}
+		} catch (error) {
+			console.error("Error loading example file:", error);
+		}
+	};
+</script>

@@ -7,7 +7,7 @@ export type RecentItem = {
 
 const RECENT_KEY = "lottie-converter-recent-files";
 const MAX_ITEMS = 20;
-const MAX_INLINE_BYTES = 300_000; // ~300KB cap for storing inline content
+const MAX_INLINE_BYTES = 2_000_000; // ~2MB cap for storing inline content (localStorage limit is typically 5MB)
 
 export function getRecentFiles(): RecentItem[] {
 	try {
